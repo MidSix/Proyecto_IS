@@ -46,52 +46,66 @@ class DataModule:
         return self.dataframe
     
     def is_empty(self)->bool: #Returns True if the dataframe is empty, False if it has data
-        if self.dataframe is not None:
-            return self.dataframe.empty
-        else:
-            print("Dataframe is empty. Load data first.")
-            return True    
+        if self.dataframe is None:
+            print("Dataframe is has not been loaded. Load data first.")
+        return self.dataframe.empty #We can use pandas built-in function to check if the dataframe is empty
     
-    def internal_data_conversion(self)->bool:
-        """
-        Intenta convertir automáticamente las columnas a tipos apropiados:
-        - Números a int/float
-        - Fechas a datetime
-        - Otros a string
-        Opera sobre el DataFrame cargado intentanto primero números, luego fechas, y finalmente strings.
-        1. Si la conversión a numérico falla, intenta convertir a fecha.
-        2. Si la conversión a fecha también falla, convierte a string.
-        """
+    def internal_data_conversion(self) -> bool:
         if self.is_empty():
             return False
-        else:
-            last_dtypes = self.dataframe.dtypes
-            for col in self.dataframe.columns:
-                # Intenta convertir a numérico
-                try:# tries to convert to numeric first
-                    self.dataframe[col] = pd.to_numeric(self.dataframe[col])
-                    continue
-                except Exception:
-                    pass
-                try:#Then tries to convert to datetime
-                    self.dataframe[col] = pd.to_datetime(self.dataframe[col])
-                    continue
-                except Exception:
-                    pass
-                new_detypes = str(self.dataframe[col].dtype)
-                self.dataframe[col] = self.dataframe[col].astype(str)#Finally, converts to string if both previous conversions fail
-            print(f"Data conversion completed: {last_dtypes}-->{new_detypes}, Conversions successful: {last_dtypes != self.dataframe.dtypes}")
-            return True
-    
-    def get_summary(self): #Returns a summary of the data, like number of rows, columns, data types, etc.
-        if self.is_empty():
+        last_dtypes = self.dataframe.dtypes
+        for col in self.dataframe.columns:
+            try:
+                self.dataframe[col] = pd.to_numeric(self.dataframe[col])
+                continue
+            except Exception:
+                pass
+            try:
+                self.dataframe[col] = pd.to_datetime(self.dataframe[col])
+                continue
+            except Exception:
+                pass
+            self.dataframe[col] = self.dataframe[col].astype(str)
+        print("Data types before conversion:")
+        print(last_dtypes)
+        print("Data types after conversion:")
+        print(self.dataframe.dtypes)
+        changes = sum(last_dtypes != self.dataframe.dtypes)# Count how many columns changed type
+        print(f"Conversion completed, ({changes}) changes were made.")
+        
+        if changes == 0:
+            print(f"No changes in data types.")
+        if changes < 0:
+            print(f"Error in conversion, negative number of changes ({changes}) detected.")#Should never happen, but you never know
             return False
-        else:
-            return self.dataframe.describe(include='all')
+        return True
+    
+    def get_summary(self):
+        if self.is_empty():
+            print("No data to summarize.")
+            return None
+        return self.dataframe.describe(include='all')
     
     def showcase_data(self)->bool: #Just shows the data in the console, returns True if successful, False if not
         if self.is_empty():
+            print("Dataframe is empty. Load data first.")
             return False
         else:
             print(self.dataframe)
             return True
+
+def test_data_module(self):# Is it correct to 
+    path=input("Enter the file path to load data (SQLite, CSV, Excel): ")
+    data_module1 = DataModule(path)
+    data_module1.load_data()
+    data_module1.internal_data_conversion()
+    print(data_module1.get_summary())
+    data_module1.showcase_data()
+
+if __name__ == "__main__":
+    Ans=input("Do you want to test the data module? (y/n): ")
+    if Ans.lower() == 'y':
+        test_data_module(None)
+    else:
+        print("Ok, no test for you.")
+
