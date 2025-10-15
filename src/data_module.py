@@ -53,39 +53,6 @@ class DataModule:
         #with our current implementation. To not change it I just add this return xd.
         return self.dataframe.empty #We can use pandas built-in function to check if the dataframe is empty
 
-    def internal_data_conversion(self) -> bool:
-        if self.is_empty():
-            return False
-        last_dtypes = self.dataframe.dtypes
-        for col in self.dataframe.columns:
-            try:
-                self.dataframe[col] = pd.to_numeric(self.dataframe[col])
-                continue
-            except Exception:
-                pass
-            try:
-                self.dataframe[col] = pd.to_datetime(self.dataframe[col])
-                continue
-            except Exception:
-                pass
-            self.dataframe[col] = self.dataframe[col].astype(str)
-        print("Data types before conversion:")
-        print(last_dtypes)
-        print("Data types after conversion:")
-        print(self.dataframe.dtypes)
-        changes = sum(last_dtypes != self.dataframe.dtypes)# Count how many columns changed type. How? well.
-        #the comparison returns a bolean serie(like an array but is a pandas object)
-        #with True when the condition is met and False otherwise.
-        #sum counts as 1 True and 0 False.
-        print(f"Conversion completed, ({changes}) changes were made.")
-
-        if changes == 0:
-            print(f"No changes in data types.")
-        if changes < 0:
-            print(f"Error in conversion, negative number of changes ({changes}) detected.")#Should never happen, but you never know
-            return False
-        return True
-
     def get_summary(self):
         if self.is_empty():
             print("No data to summarize.")
@@ -101,15 +68,13 @@ class DataModule:
             return True
 
 def test_data_module(self):# Is it correct to
-    path=input("Enter the file path to load data (SQLite, CSV, Excel): ")
-    data_module1 = DataModule(path)
-    if data_module1.load_data(): #This conditional just avoid executing the next lines of code if the data didn't load
-        #succesfully because it return the dataframe. If it's not empty, this conditional is True, if it's None then False.
-        data_module1.internal_data_conversion()
-        print(data_module1.get_summary())
-        data_module1.showcase_data()
+    if self.load_data(): #This conditional just avoid executing the next lines of code if the data didn't load
+    #succesfully because it return the dataframe. If it's not empty, this conditional is True, if it's None then False.
+        print(self.get_summary())
+        self.showcase_data()
 
 if __name__ == "__main__":
+
     Ans=input("Do you want to test the data module? (y/n): ")
     if Ans.lower() == 'y':
         test_data_module(None)
