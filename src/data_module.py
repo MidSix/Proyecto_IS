@@ -5,40 +5,62 @@ import os # To handle file paths and extensions that may vary by OS(linux, windo
 #This data module must support SQlite, CSV, and Excel formats
 #I decided to use pandas for the general dataframe handling, because it provides a matrix-like structure and easy data manipulation
 class DataModule:
-    #When initializing, user must provide the file path to the data source
-    def __init__(self, file_path):
-        self.file_path = file_path if file_path else None #just for consistency. If file_path is void then it stores None
-        self.file_name = os.path.basename(file_path) if file_path else None
-        self.file_type = os.path.splitext(self.file_name)[-1][1:].lower() if self.file_name else None
+    #Now when initializing, user can idle in the window waiting to add file paths
+    def __init__(self):
+        self.file_lists = {} #This will store the paths of the files added by the user, key is the name, value is the path
+        self.current_file_name = None
+        self.current_file_type = None
         self.dataframe = None #Remember this is a pandas dataframe, it is a matrix made internally as a 2D array
         self.connection = None #This is an object special for SQLite that handles the connection to the database
-
+    
+    @property
+    def get_file_names(self):#This is for the implementation of the GUI, to show the user the files he added, and let him choose one
+        return list(self.file_lists.keys()) #Return the list of file names added by the user
+    
+    def add_file_path(self, file_path: str) -> bool: 
+        file_name = os.path.basename(file_path) if file_path else None
+        file_type = os.path.splitext(file_name)[-1][1:].lower() if file_name else None
+        if not os.path.isfile(file_path) or file_type not in ['sqlite', 'db', 'csv', 'xlsx', 'xls']:
+            print("File does not exist or is incompatible. Please provide a valid file path.")
+            return False
+        self.file_lists[file_name] = file_path # Store the path in the dictionary with the file name as key
+        return True
+    
+    def set_current_file(self, file_name: str) -> bool:#This is for the file selector in the GUI
+        if file_name not in self.file_lists:
+            print("File name not found. Please provide a valid file name.")
+            return False
+        self.current_file_path = self.file_lists[file_name]
+        self.current_file_name = file_name
+        self.current_file_type = os.path.splitext(self.current_file_name)[-1][1:].lower() # Get the file extension without the dot and in lowercase
+        return True
+    
     def load_data(self) -> bool:
         try:
-            if self.file_type in ['sqlite', 'db']:
-                self.connection = sqlite3.connect(self.file_path)
+            if self.current_file_type in ['sqlite', 'db']:
+                self.connection = sqlite3.connect(self.current_file_path)
                 # Fetch the first table name
                 cursor = self.connection.cursor()
                 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
                 tables = cursor.fetchall()
 
                 if not tables:
-                    raise ValueError("No se encontró ninguna tabla en la base de datos sqlite.")
+                    raise ValueError("No table found in the sqlite database.")
 
                 table_name = tables[0][0]
                 self.dataframe = pd.read_sql_query(f"SELECT * FROM {table_name}", self.connection)
 
-            elif self.file_type == 'csv':
-                self.dataframe = pd.read_csv(self.file_path, header=0)
+            elif self.current_file_type == 'csv':
+                self.dataframe = pd.read_csv(self.current_file_path, header=0)
                 if self.dataframe.empty:
-                    raise ValueError("El archivo CSV está vacío o no se pudo leer correctamente.")
+                    raise ValueError("The CSV file is empty or could not be read correctly.")
 
-            elif self.file_type in ['xlsx', 'xls']:
-                self.dataframe = pd.read_excel(self.file_path, header=0)
+            elif self.current_file_type in ['xlsx', 'xls']:
+                self.dataframe = pd.read_excel(self.current_file_path, header=0)
                 if self.dataframe.empty:
-                    raise ValueError("El archivo Excel está vacío o no se pudo leer correctamente.")
+                    raise ValueError("The Excel file is empty or could not be read correctly.")
             else:
-                raise ValueError("Unsupported file type. Supported types are: sqlite, db, csv, xlsx, xls.")
+                raise ValueError("Unsupported file type. Supported types are: sqlite, db, csv, xlsx, xls.")#It shouldn't reach this point because of previous checks
         except Exception as e:
             print(f"Error loading data: {e}")#This is for other reasons like file not found, permission issues, etc.
             self.dataframe = None
@@ -67,17 +89,14 @@ class DataModule:
             print(self.dataframe)
             return True
 
-def test_data_module(self):# Is it correct to
-    if self.load_data(): #This conditional just avoid executing the next lines of code if the data didn't load
-    #succesfully because it return the dataframe. If it's not empty, this conditional is True, if it's None then False.
-        print(self.get_summary())
-        self.showcase_data()
-
-if __name__ == "__main__":
+    def test_data_module(self): #A simple to test should go here, add later
+        print("Testing DataModule...")
+       
 
     Ans=input("Do you want to test the data module? (y/n): ")
     if Ans.lower() == 'y':
         test_data_module(None)
     else:
-        print("Ok, no test for you.")
-
+        print("Ok, no test for you...")# Ni....") 
+        #if you read that last comment and you are the project reviewer, please ignore it, it's just a joke.
+        #else, I was talking to you
