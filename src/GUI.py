@@ -10,7 +10,6 @@ class Window(QWidget):
         self.setWindowTitle("Linear regression")
         self.setGeometry(200, 200, 300, 300)
         self.setWindowIcon(QIcon("icon.jpg"))
-
         # interface elements
         # Here the widgets are created but not showed on screen
         self.label  = QLabel("Primero carga los datos")
@@ -26,7 +25,7 @@ class Window(QWidget):
         layout.addWidget(self.button)
 
         self.setLayout(layout)
-
+        self.data = DataModule()
     # the function for the clicked button
     def choose_file(self):
         #QFileDialog.getOpenFileName trigger the file explorer. It returns a tuple with
@@ -43,13 +42,11 @@ class Window(QWidget):
             "Select a file",
             "",
             "Archivos csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);; csv (*.csv);; " \
-            "sqlite (*.sqlite *.db);; excel (*.xlsx .*xls)"
+            "sqlite (*.sqlite *.db);; excel (*.xlsx *.xls)"
         )
         if ruta:
             self.label.setText(f"Archivo seleccionado:\n{ruta}")
-            data = DataModule(ruta)
-            data.load_data()
-            data.showcase_data() #Shown in the terminal after uploading the file
+            data_frame = self.data.main(ruta)
 
 
 def main():
