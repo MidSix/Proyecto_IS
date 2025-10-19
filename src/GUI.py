@@ -1,36 +1,121 @@
-import sys
+# -*- coding: utf-8 -*-
+import sys  # Support for command-line arguments and sys.exit
 from data_module import *
-from PyQt5.QtWidgets import (QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
-    QTableWidget, QTableWidgetItem, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout)
-from PyQt5.QtGui import QIcon
-import qdarkstyle
+
+# Base for Qt's model–view pattern
+from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
+
+# Qt Widgets
+from PyQt5.QtWidgets import (
+    QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
+    QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout
+)
+
+from PyQt5.QtGui import QIcon  # Window icon
+import qdarkstyle  # Dark theme; minimal cost compared to model–view performance gain
+
+
+# -----------------------------
+# Qt Model exposing a pandas.DataFrame to the view
+# (functionally equivalent to “Table to display the data” from the old code,
+# but using the model–view approach: no QTableWidgetItem created per cell)
+# -----------------------------
+class PandasModel(QAbstractTableModel):
+    """Lightweight model: does not create QTableWidgetItem per cell; the view requests data on demand."""
+
+    def __init__(self, df, parent=None):
+        super().__init__(parent)        # Initialize QAbstractTableModel
+        self._df = df                   # Keep a reference to the DataFrame
+
+    # Number of rows
+    def rowCount(self, parent=None):
+        # If parent is valid, it means the model is hierarchical (not our case)
+        if parent and parent.isValid():
+            return 0
+        return len(self._df.index)
+
+    # Number of columns
+    def columnCount(self, parent=None):
+        if parent and parent.isValid():
+            return 0
+        return len(self._df.columns)
+
+    # Return the data for a specific cell and "role" (DisplayRole = visible text)
+    def data(self, index, role=Qt.DisplayRole):
+        if not index.isValid():
+            return QVariant()
+        if role in (Qt.DisplayRole, Qt.EditRole):
+            # Fast access via iat; cast to str to avoid expensive formatting
+            val = self._df.iat[index.row(), index.column()]
+            return "" if val is None else str(val)
+        # Optional: right-align numbers if desired
+        # if role == Qt.TextAlignmentRole:
+        #     return Qt.AlignRight | Qt.AlignVCenter
+        return QVariant()
+
+    # Column and row headers
+    def headerData(self, section, orientation, role=Qt.DisplayRole):
+        if role != Qt.DisplayRole:
+            return QVariant()
+        if orientation == Qt.Horizontal:
+            # Column names from the DataFrame
+            return str(self._df.columns[section])
+        else:
+            # Show row index (or "" for slightly faster rendering)
+            # return str(self._df.index[section])
+            return str(section)
+
+    # Optional: sorting when clicking on headers
+    def sort(self, column, order):
+        # Temporarily block signals to avoid multiple redraws
+        self.layoutAboutToBeChanged.emit()
+        ascending = (order == Qt.AscendingOrder)
+        # Sort by selected column; inplace to avoid duplicating memory
+        self._df.sort_values(by=self._df.columns[column], ascending=ascending, inplace=True, kind="mergesort")
+        self._df.reset_index(drop=True, inplace=True)
+        # Notify the view that the layout has changed
+        self.layoutChanged.emit()
+
 
 # define main window class
 class Window(QWidget):
     def __init__(self):
         super().__init__()
-        # basic window
+        # Basic window setup
         self.setWindowTitle("Linear regression")
         self.setWindowIcon(QIcon("icon.jpg"))
-        # interface elements
-        # Here the widgets are created but not showed on screen
-        self.label  = QLabel("Select a file to dowload the data")
+
+        # Interface elements
+        # Here widgets are created but not yet displayed
+        self.label  = QLabel("Select a file to download the data")
         self.path_display = QLineEdit()
         self.path_display.setPlaceholderText("Uploaded file path...")
         self.path_display.setReadOnly(True)
         self.button = QPushButton("Upload file")
 
-        # connect button to greet
+        # Connect button to file selection
         self.button.clicked.connect(self.choose_file)
 
-        # Table to display the data
-        self.table = QTableWidget()
-        self.table.setColumnCount(0)
-        self.table.setRowCount(0)
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
-        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # Table to display the data (now as QTableView using model–view, much more efficient)
+        self.table = QTableView()
+        self.table.setSortingEnabled(True)            # Allow sorting by clicking headers
+        self.table.setAlternatingRowColors(True)      # Better readability
 
-        # Column selector
+        # Header configuration (replaces old ResizeToContents behavior)
+        hh = self.table.horizontalHeader()            # Horizontal header
+        vh = self.table.verticalHeader()              # Vertical header
+
+        # >>> NEW: all columns have equal width, very low-cost
+        hh.setStretchLastSection(False)
+        hh.setSectionResizeMode(QHeaderView.Stretch)  # Distribute visible space equally among all columns
+
+        # Fixed row height (equivalent to old ResizeToContents for vertical, but without the overhead)
+        vh.setDefaultSectionSize(24)
+        vh.setMinimumSectionSize(20)
+        # If you don't need to show the index, this saves some width and repainting
+        # vh.setVisible(False)
+
+        # Column selectors
         self.input_label = QLabel("Selecciona columnas de entrada (features):")
         self.input_selector = QListWidget()
         self.input_selector.setSelectionMode(QAbstractItemView.MultiSelection)
@@ -40,18 +125,19 @@ class Window(QWidget):
         self.confirm_button = QPushButton("Confirmar selección")
         self.confirm_button.clicked.connect(self.confirm_selection)
 
-        # Hide initially
+        # Hide selectors until a DataFrame is loaded
         for i in [self.input_label, self.input_selector,
                   self.output_label, self.output_selector,
-                  self.confirm_button]: i.setVisible(False)
+                  self.confirm_button]:
+            i.setVisible(False)
 
-        # Layout to upload files
+        # Layout for file upload controls
         top_controls = QHBoxLayout()
         top_controls.addWidget(self.label)
         top_controls.addWidget(self.path_display)
         top_controls.addWidget(self.button)
 
-        # Layout selectors
+        # Layout for selectors
         bottom_panel = QVBoxLayout()
         bottom_panel.addWidget(self.input_label)
         bottom_panel.addWidget(self.input_selector)
@@ -65,7 +151,7 @@ class Window(QWidget):
         main_layout.addWidget(self.table)
         main_layout.addLayout(bottom_panel)
 
-        # Adjust table
+        # Adjust table stretch ratios
         main_layout.setStretch(0, 0)
         main_layout.setStretch(1, 8)
         main_layout.setStretch(2, 2)
@@ -78,69 +164,71 @@ class Window(QWidget):
         self.selected_inputs = []
         self.selected_output = None
 
-    # the function for the clicked button
+    # Function called when clicking the upload button
     def choose_file(self):
-        #QFileDialog.getOpenFileName trigger the file explorer. It returns a tuple with
-        #two values. ruta is obviusly the path of the file. "_" is a name convention to say
-        #that we don't care about that variable, in this case is the used filter. In this
-        #case is "Archivos csv,sqlite,xls (*.csv ...) ..." is pretty likely that we won't use that in future.
-        #Sintaxis of the filter:
-        #"name_of_the_filter_can_be_any (name.extension)".
-        #(*.*)" ->any name and any extension basically all files.  ";;" other filter applied
-        #in the next selectable box in explorer.
+        # QFileDialog.getOpenFileName triggers the OS file explorer.
+        # It returns a tuple with two values:
+        # - ruta: the selected file path
+        # - "_": a throwaway variable for the selected filter (we ignore it)
+        #
+        # Filter syntax:
+        # "filter_name (name.extension)"
+        # Example: (*.*) means all files.
+        # Filters can be combined using ";;" to make multiple filter options.
+        ruta, _ = QFileDialog.getOpenFileName(
+            self, "Select a file", "",
+            "Files csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);; "
+            "csv (*.csv);; sqlite (*.sqlite *.db);; excel (*.xlsx *.xls)"
+        )
 
-        rute, _ = QFileDialog.getOpenFileName( self, "Select a file", "", "Files csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);" \
-            "; csv (*.csv);; " \
-            "sqlite (*.sqlite *.db);; excel (*.xlsx *.xls)" )
+        if not ruta:
+            return  # User canceled
 
-        if not rute:
-            return
-
-        # Show route
-        self.path_display.setText(rute)
+        # Show file path in the QLineEdit
+        self.path_display.setText(ruta)
 
         # Try to load the data
         try:
-            data_frame, error_message = self.data.main(rute)
-            if data_frame is None: #wether the file has header/metadata or its
-                #completely empty, both situations raise an error which is
-                #handled in data module, returning None as dataframe.
-                #We will never use the second comprobation so we can relly just
-                #on comprobating if its None or not.
+            # data_module.main(ruta) returns (data_frame, error_message)
+            data_frame, error_message = self.data.main(ruta)
+            if data_frame is None:
+                # If file has missing header/metadata or is completely empty,
+                # DataModule handles the error internally and returns None as DataFrame.
                 QMessageBox.warning(self, "Warning", error_message)
                 return
 
-            # Show in table
+            # Show data in the table (equivalent to “Fill the table with the dataframe” in old code)
             self.load_table(data_frame)
-            QMessageBox.information(self, "Successfull upload", "File uploaded seccessfully.")
+            QMessageBox.information(self, "Successful upload", "File uploaded successfully.")
 
-            # Show column selector
+            # Show column selectors
             self.show_column_selectors(data_frame)
 
         except Exception as e:
             QMessageBox.critical(self, "Error uploading file", f"The file could not be loaded:\n{str(e)}")
 
-    # Fill the table with the dataframe
+    # Fill the table with the dataframe (now connects DF to the view via model)
     def load_table(self, df):
-        self.table.clear()
-        self.table.setRowCount(len(df.index))
-        self.table.setColumnCount(len(df.columns))
-        self.table.setHorizontalHeaderLabels(df.columns.astype(str).tolist())
+        # In the old code: clear + setRow/ColCount + setHorizontalHeaderLabels + nested loops with setItem
+        # In the new version: assign a model that exposes the DF; the view requests data lazily.
+        self.current_df = df
 
-        for i in range(len(df.index)):
-            for j in range(len(df.columns)):
-                valor = str(df.iat[i, j])
-                self.table.setItem(i, j, QTableWidgetItem(valor))
+        # Temporarily disable updates to avoid redraws while setting the model
+        self.table.setUpdatesEnabled(False)
 
-        # Size and scroll
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.verticalHeader().setSectionResizeMode(QHeaderView.ResizeToContents)
+        # Assign the model; from now on, the view requests data on demand
+        model = PandasModel(df, self)
+        self.table.setModel(model)
 
-        # Activate scrolls
-        self.table.setHorizontalScrollMode(QTableWidget.ScrollPerPixel)
-        self.table.setVerticalScrollMode(QTableWidget.ScrollPerPixel)
+        # (Optional) Adjust columns to fit content once; costly if many columns
+        # self.table.resizeColumnsToContents()
 
-    # Show selectors
+        # Re-enable updates
+        self.table.setUpdatesEnabled(True)
+
+        # Note: QTableView already manages scroll performance efficiently, so we don't need ScrollPerPixel here.
+
+    # Show column selectors
     def show_column_selectors(self, df):
         columns = df.columns.astype(str).tolist()
 
@@ -153,7 +241,8 @@ class Window(QWidget):
         self.output_selector.addItems(columns)
 
         # Make visible
-        for i in [self.input_label, self.input_selector, self.output_label, self.output_selector, self.confirm_button]: i.setVisible(True)
+        for i in [self.input_label, self.input_selector, self.output_label, self.output_selector, self.confirm_button]:
+            i.setVisible(True)
 
     # Confirm selection
     def confirm_selection(self):
@@ -171,18 +260,27 @@ class Window(QWidget):
             QMessageBox.warning(self, "Error", "You must select one output column.")
             return
 
-        QMessageBox.information(self, "Selection confirmed",
-            f"Inputs: {', '.join(self.selected_inputs)}\nOutput: {self.selected_output}")
+        QMessageBox.information(
+            self, "Selection confirmed",
+            f"Inputs: {', '.join(self.selected_inputs)}\nOutput: {self.selected_output}"
+        )
 
+
+# -----------------------------
+# Entry point
+# -----------------------------
 def main():
-    app = QApplication(sys.argv) #for now we don't need CLI options, so waiting for a list of parameters
-    #is not necessary at the moment. Changable if needed.
+    app = QApplication(sys.argv)  # For now we don't need CLI options, so waiting for a list of parameters
+    # Not necessary at the moment. Changeable if needed.
+
+    # Apply dark theme (as in the old code)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+
     window = Window()
-    window.showMaximized() # show the window
-    sys.exit(app.exec_()) # run the loop
+    window.showMaximized()  # Show the main window
+    sys.exit(app.exec_())   # Run the event loop
+
 
 if __name__ == "__main__":
-    #This block of code won't execute when this module its importorted from main, so is just for test.
+    # This block will not execute when the module is imported; it's only for standalone testing.
     main()
-
