@@ -41,7 +41,9 @@ class Window(QWidget):
         self.confirm_button.clicked.connect(self.confirm_selection)
 
         # Hide initially
-        for i in [self.input_label, self.input_selector, self.output_label, self.output_selector, self.confirm_button]: i.setVisible(False)
+        for i in [self.input_label, self.input_selector,
+                  self.output_label, self.output_selector,
+                  self.confirm_button]: i.setVisible(False)
 
         # Layout to upload files
         top_controls = QHBoxLayout()
@@ -99,9 +101,13 @@ class Window(QWidget):
 
         # Try to load the data
         try:
-            data_frame = self.data.main(rute)
-            if data_frame is None or data_frame.empty:
-                QMessageBox.warning(self, "Warning", "The file is empty or could not be read correctly.")
+            data_frame, error_message = self.data.main(rute)
+            if data_frame is None: #wether the file has header/metadata or its
+                #completely empty, both situations raise an error which is
+                #handled in data module, returning None as dataframe.
+                #We will never use the second comprobation so we can relly just
+                #on comprobating if its None or not.
+                QMessageBox.warning(self, "Warning", error_message)
                 return
 
             # Show in table
@@ -167,7 +173,7 @@ class Window(QWidget):
 
         QMessageBox.information(self, "Selection confirmed",
             f"Inputs: {', '.join(self.selected_inputs)}\nOutput: {self.selected_output}")
-        
+
 def main():
     app = QApplication(sys.argv) #for now we don't need CLI options, so waiting for a list of parameters
     #is not necessary at the moment. Changable if needed.

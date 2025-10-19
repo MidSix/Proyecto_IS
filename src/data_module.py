@@ -12,6 +12,7 @@ class DataModule:
         self.current_file_type = None
         self.current_dataframe = None #Remember this is a pandas dataframe, it is a matrix made internally as a 2D array
         self.current_connection = None #This is an object special for SQLite that handles the connection to the database
+        self.error_message = None #To store error messages and show them in the GUI
 
     @property
     def get_file_names(self):#This is for the implementation of the GUI, to show the user the files he added, and let him choose one
@@ -61,7 +62,13 @@ class DataModule:
 
             elif self.current_file_type == 'csv':
                 self.current_dataframe = pd.read_csv(self.current_file_path, header=0)
-                if self.current_dataframe.empty:
+                if self.current_dataframe.empty: #Just a curiosity.These pandas functions never returns None
+                    #if the file is completely empty, without metadata or headers it raises its own error.
+                    #so we don't use .empty with a None type object in any case, this is why this is not
+                    #causing issues, and if the file don't have user data but has headers and metadata
+                    #it returns an empty dataframe object so we can use .empty safely and raise our own error.
+                    #You can test this behavior by creating an empty file in any of these functions and trying to load it.
+                    #You will see pandas raises its own error message, different from the one we have here.
                     raise ValueError("The CSV file is empty or could not be read correctly.")
 
             elif self.current_file_type in ['xlsx', 'xls']:
@@ -71,9 +78,12 @@ class DataModule:
             else:
                 raise ValueError("Unsupported file type. Supported types are: sqlite, db, csv, xlsx, xls.")#It shouldn't reach this point because of previous checks
         except Exception as e:
-            print(f"Error loading data: {e}")#This is for other reasons like file not found, permission issues, etc.
+            error_message = f"Error loading data: {e}"#This is for other reasons like file not found, permission issues, etc.
+            print(error_message)
             self.current_dataframe = None
+            self.error_message = error_message
             return False
+        error_message = None
         return True
 
     def is_empty(self)->bool: #Returns True if the dataframe is empty, False if it has data
@@ -104,9 +114,8 @@ class DataModule:
         file_name = os.path.basename(file_path) if file_path else None
         self.add_file_path(file_path, file_name)
         self.set_current_file(file_name)
-        if self.load_data():
-            self.showcase_data()
-        return self.current_dataframe
+        self.load_data()
+        return self.current_dataframe, self.error_message
 
 # I didn't figure it out how to use this properly.
     # def test_data_module(self): #A simple to test should go here, add later
