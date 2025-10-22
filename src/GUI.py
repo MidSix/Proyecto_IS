@@ -11,6 +11,8 @@ from PyQt5.QtWidgets import (
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
 import qdarkstyle
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
+from data_split import DataSplitter,DataSplitError
 
 
 # Lightweight Qt model exposing a pandas.DataFrame to QTableView
@@ -429,6 +431,66 @@ class Window(QWidget):
         self.dynamic_size()
         return super().resizeEvent(event)
     #--------------------------------------------------------
+class SplitWidget(QWidget):
+    def _init_(self, df_preprocessed, parent=None):
+        super()._init_(parent)
+        self.df = df_preprocessed
+        self.splitter = DataSplitter()
+        self.train_df = None
+        self.test_df = None
+        self.setup_ui()
+
+    def setup_ui(self):
+        layout = QVBoxLayout(self)
+
+        # Entradas
+        self.test_edit = QLineEdit("0.2")
+        self.seed_edit = QLineEdit("42")
+        btn = QPushButton("Split data")
+        btn.clicked.connect(self.on_split)
+
+        # Tablas para mostrar los datos
+        self.train_label = QLabel("Training set:")
+        self.train_table = QTableView()
+        self.test_label = QLabel("Test set:")
+        self.test_table = QTableView()
+
+        # Layout
+        layout.addWidget(QLabel("Test fraction (e.g. 0.2):"))
+        layout.addWidget(self.test_edit)
+        layout.addWidget(QLabel("Seed (reproducibility):"))
+        layout.addWidget(self.seed_edit)
+        layout.addWidget(btn)
+        layout.addWidget(self.train_label)
+        layout.addWidget(self.train_table)
+        layout.addWidget(self.test_label)
+        layout.addWidget(self.test_table)
+
+    def on_split(self):
+        try:
+            test_frac = float(self.test_edit.text())
+            seed = int(self.seed_edit.text())
+
+            self.train_df, self.test_df = self.splitter.split(
+                self.df, test_size=test_frac, random_seed=seed
+            )
+            meta = self.splitter.get_meta()
+
+            # Mostrar tablas
+            self.train_table.setModel(PandasModel(self.train_df))
+            self.test_table.setModel(PandasModel(self.test_df))
+
+            # Mensaje
+            QMessageBox.information(
+                self,
+                "Split successfully completed",
+                f"Division was correctly done.\n\n"
+                f"Training set: {meta['n_train']} rows\n"
+                f"Test set: {meta['n_test']} rows"
+            )
+
+        except (ValueError, DataSplitError) as e:
+            QMessageBox.critical(self, "Error", str(e))
 
 # Entry point
 def main():
