@@ -246,7 +246,7 @@ class Window(QWidget):
         ruta, _ = QFileDialog.getOpenFileName(
             self, "Select a file", "",
             "Files csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);; "
-            "csv (.csv);; sqlite (.sqlite .db);; excel (.xlsx *.xls)"
+            "csv (*.csv);; sqlite (*.sqlite *.db);; excel (*.xlsx *.xls)"
         )
         if not ruta:
             return
