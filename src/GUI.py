@@ -118,11 +118,8 @@ class Window(QWidget):
         super().__init__()
         self.setWindowTitle("Linear Regression - Data Preprocessing")
         self.setWindowIcon(QIcon("icon.jpg"))
-        #----------------- Set bottom widget ------------------
-        #This is for set a fixed height of the bottom_panel, avoiding stealing
-        #visibility of the dataframe. And also this allow us to reserve its
-        #minimum height of bottom, with this the dataframe don't displayed above
-        #the bottom, because it has a reserve space.
+
+        # ----------------- Bottom Panel Setup -----------------
         self.bottom_panel_widget = QWidget()
 
         # ----------------- File Load Section -----------------
@@ -130,20 +127,19 @@ class Window(QWidget):
         self.path_display = QLineEdit()
         self.path_display.setPlaceholderText("Select a file to load the data")
         self.path_display.setReadOnly(True)
-        self.btn_open_file = QPushButton("Open File") #By convention the
-        #message displayed by the btn, if in english, should follow title case.
+        self.btn_open_file = QPushButton("Open File")
         self.btn_open_file.clicked.connect(self.choose_file)
 
         # ----------------- Table Section -----------------
         self.table = QTableView()
-        self.table.setSortingEnabled(True)            # enable now; we will re-enable after setModel too
+        self.table.setSortingEnabled(True)
         self.table.setAlternatingRowColors(True)
 
         hh = self.table.horizontalHeader()
         vh = self.table.verticalHeader()
         hh.setStretchLastSection(False)
-        hh.setSectionResizeMode(QHeaderView.Stretch)  # equal width columns, auto on resize
-        hh.setSortIndicatorShown(True)                # show the sort arrow on the header
+        hh.setSectionResizeMode(QHeaderView.Stretch)
+        hh.setSortIndicatorShown(True)
         vh.setDefaultSectionSize(24)
         vh.setMinimumSectionSize(20)
 
@@ -159,12 +155,6 @@ class Window(QWidget):
 
         self.output_label = QLabel("Select output column (target)")
         self.output_selector = QComboBox()
-        self.output_selector.addItems([
-            "Delete rows with NaN",
-            "Fill with mean",
-            "Fill with median",
-            "Fill with constant"
-        ])
 
         self.confirm_button = QPushButton("Confirm selection")
         self.confirm_button.clicked.connect(self.confirm_selection)
@@ -184,17 +174,21 @@ class Window(QWidget):
         self.constant_name_edit = QLineEdit()
         self.constant_name_edit.setPlaceholderText("Constant name")
 
+        # ----------------- Split Button -----------------
+        self.split_button = QPushButton("Split data into training/test")
+        self.split_button.clicked.connect(self.open_split_window)
+        self.split_button.setVisible(False)
+
         # Initially hidden
         for w in [
             self.input_label, self.input_selector, self.output_label,
             self.output_selector, self.confirm_button, self.preprocess_label,
-            self.strategy_box, self.apply_button, self.constant_name_edit
+            self.strategy_box, self.apply_button, self.constant_name_edit,
+            self.split_button
         ]:
             w.setVisible(False)
 
-        # Layout setup
-
-        #Top_layout
+        # ----------------- Layout setup -----------------
         top_controls = QHBoxLayout()
         top_controls.addWidget(self.label)
         top_controls.addWidget(self.path_display)
@@ -207,15 +201,18 @@ class Window(QWidget):
         input_col = QVBoxLayout()
         input_col.addWidget(self.input_label)
         input_col.addWidget(self.input_selector)
+
         output_col = QVBoxLayout()
         output_col.addWidget(self.output_label)
         output_col.addWidget(self.output_selector)
         output_col.addWidget(self.confirm_button)
+
         preprocess_col = QVBoxLayout()
         preprocess_col.addWidget(self.preprocess_label)
         preprocess_col.addWidget(self.strategy_box)
         preprocess_col.addWidget(self.constant_name_edit)
         preprocess_col.addWidget(self.apply_button)
+        preprocess_col.addWidget(self.split_button)
 
         # Group the layouts into another layout but this time a horizontal one
         container_selector_layout = QHBoxLayout()
@@ -230,26 +227,26 @@ class Window(QWidget):
         bottom_panel.addWidget(self.container_preprocess_widget, alignment=Qt.AlignRight)
 
         self.bottom_panel_widget.setLayout(bottom_panel)
+
         main_layout = QVBoxLayout()
         main_layout.addLayout(top_controls)
         main_layout.addWidget(self.table)
         main_layout.addWidget(self.bottom_panel_widget)
-        main_layout.setStretch(1, 8)  # keep the table as the main focus
+        main_layout.setStretch(1, 8)
         self.setLayout(main_layout)
 
-        # Data state
+        # ----------------- Data State -----------------
         self.data = DataModule()
         self.current_df = None
         self.selected_inputs = []
         self.selected_output = None
-    # -------------------Methods------------------------------------------------
 
-    # File selection and loading
+    # ------------------- Methods ------------------------------------------------
     def choose_file(self):
         ruta, _ = QFileDialog.getOpenFileName(
             self, "Select a file", "",
             "Files csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);; "
-            "csv (*.csv);; sqlite (*.sqlite *.db);; excel (*.xlsx *.xls)"
+            "csv (.csv);; sqlite (.sqlite .db);; excel (.xlsx *.xls)"
         )
         if not ruta:
             return
@@ -262,19 +259,18 @@ class Window(QWidget):
                 return
 
             self.load_table(df)
-            QMessageBox.information(self, "Success", "File load successfully.")
+            QMessageBox.information(self, "Success", "File loaded successfully.")
             self.container_preprocess_widget.hide()
             self.show_column_selectors(df)
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"The file could not be loaded:\n{str(e)}")
-            self.preprocess
-    # Load DataFrame into the model-view table
+
     def load_table(self, df):
         self.current_df = df
         self.table.setUpdatesEnabled(False)
         self.table.setModel(PandasModel(df, self))
-        # IMPORTANT: re-enable sorting *after* setting the model
+        # IMPORTANT: re-enable sorting after setting the model
         self.table.setSortingEnabled(True)
         # Optional: show sort indicator default (e.g., first column ascending)
         # self.table.horizontalHeader().setSortIndicator(0, Qt.AscendingOrder)
@@ -296,8 +292,7 @@ class Window(QWidget):
 
     def confirm_selection(self):
         self.selected_inputs = [i.text() for i in self.input_selector.selectedItems()]
-        selected_output_item = self.output_selector.currentText()
-        self.selected_output = selected_output_item if selected_output_item else None
+        self.selected_output = self.output_selector.currentText()
 
         if not self.selected_inputs or not self.selected_output:
             QMessageBox.warning(self, "Error", "Please select both input and output columns.")
@@ -327,7 +322,6 @@ class Window(QWidget):
 
         cols = self.selected_inputs + [self.selected_output]
         df = self.current_df
-
         missing_counts = df[cols].isna().sum()
         total_missing = int(missing_counts.sum())
 
@@ -351,13 +345,13 @@ class Window(QWidget):
                 for col in cols:
                     if pd.api.types.is_numeric_dtype(df[col]):
                         df[col].fillna(df[col].mean(), inplace=True)
-                msg = "Missing values filled with column mean (numeric columns only)."
+                msg = "Missing values filled with column mean."
 
             elif strategy == "Fill with median":
                 for col in cols:
                     if pd.api.types.is_numeric_dtype(df[col]):
                         df[col].fillna(df[col].median(), inplace=True)
-                msg = "Missing values filled with column median (numeric columns only)."
+                msg = "Missing values filled with column median."
 
             elif strategy == "Fill with constant":
                 written_cte = self.constant_name_edit.text()
@@ -365,6 +359,9 @@ class Window(QWidget):
                     for col in cols:
                         df[col].fillna(written_cte, inplace=True)
                     msg = f"Missing values filled with constant: {written_cte}"
+                else:
+                    QMessageBox.warning(self, "Error", "Please provide a constant value.")
+                    return
             else:
                 QMessageBox.warning(self, "Error", "Unknown preprocessing strategy.")
                 return
@@ -375,15 +372,27 @@ class Window(QWidget):
                 model.set_dataframe(df)
             else:
                 self.load_table(df)
-            # Refresh the highlighted columns when the user preproces the values
-            model = self.table.model()
+
             if hasattr(model, "set_highlight_by_missing"):
                 model.set_highlight_by_missing(cols)
 
             QMessageBox.information(self, "Preprocessing Completed", msg)
 
+            # Show split button after successful preprocessing
+            self.split_button.setVisible(True)
+
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error during preprocessing:\n{str(e)}")
+
+    # ----------------- TRAIN/TEST -----------------
+    def open_split_window(self):
+        if self.current_df is None or self.current_df.empty:
+            QMessageBox.warning(self, "Error", "There isn't any data avaliable to split.")
+            return
+
+        self.split_window = SplitWidget(self.current_df)
+        self.split_window.show()
+
 
     def dynamic_size(self):
         #Ok, this is a function that establish the height of the widgets
@@ -432,8 +441,8 @@ class Window(QWidget):
         return super().resizeEvent(event)
     #--------------------------------------------------------
 class SplitWidget(QWidget):
-    def _init_(self, df_preprocessed, parent=None):
-        super()._init_(parent)
+    def __init__(self, df_preprocessed, parent=None):
+        super().__init__(parent)
         self.df = df_preprocessed
         self.splitter = DataSplitter()
         self.train_df = None
