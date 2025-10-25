@@ -92,6 +92,9 @@ class PandasModel(QAbstractTableModel):
             bottom_right = self.index(self.rowCount() - 1, self.columnCount() - 1)
             self.dataChanged.emit(top_left, bottom_right, [Qt.BackgroundRole])
             self.headerDataChanged.emit(Qt.Horizontal, 0, self.columnCount() - 1)
+        if self.highlight_cols:
+            return True
+        return False
 
     def sort(self, column, order):
         """Called by the view when header sorting is enabled."""
@@ -119,9 +122,9 @@ class Window(QWidget):
         self.setWindowTitle("Linear Regression - Data Preprocessing")
         self.setWindowIcon(QIcon("icon.jpg"))
 
-        # ----------------- Bottom Panel Setup -----------------
+        # ----------------- Panel Setup -----------------
+        self.top_panel_widget = QWidget()
         self.bottom_panel_widget = QWidget()
-
         # ----------------- File Load Section -----------------
         self.label = QLabel("Path")
         self.path_display = QLineEdit()
@@ -143,7 +146,7 @@ class Window(QWidget):
         vh.setDefaultSectionSize(24)
         vh.setMinimumSectionSize(20)
 
-        # ----------------- Column Selectors -----------------
+        # ----------------- bottom setup -----------------
         self.container_selector_widget = QWidget()
         self.container_preprocess_widget = QWidget()
         self.input_label = QLabel("Select input columns (features)")
@@ -160,7 +163,7 @@ class Window(QWidget):
         self.confirm_button.clicked.connect(self.confirm_selection)
 
         # ----------------- Preprocessing Controls -----------------
-        self.preprocess_label = QLabel("Handle missing data")
+        self.preprocess_label = QLabel("Handle missing data:\nred columns have at least\none NaN value")
         self.strategy_box = QComboBox()
         self.strategy_box.addItems([
             "Delete rows with NaN",
@@ -189,13 +192,13 @@ class Window(QWidget):
             w.setVisible(False)
 
         # ----------------- Layout setup -----------------
-        top_controls = QHBoxLayout()
-        top_controls.addWidget(self.label)
-        top_controls.addWidget(self.path_display)
-        top_controls.addWidget(self.btn_open_file)
+        top_panel_layout = QHBoxLayout()
+        top_panel_layout.addWidget(self.label)
+        top_panel_layout.addWidget(self.path_display)
+        top_panel_layout.addWidget(self.btn_open_file)
 
         #Bottom_layout:
-        bottom_panel = QHBoxLayout()
+        bottom_panel_layout = QHBoxLayout()
 
         # Creation of vertical views and stack the widgets on it.
         input_col = QVBoxLayout()
@@ -206,13 +209,14 @@ class Window(QWidget):
         output_col.addWidget(self.output_label)
         output_col.addWidget(self.output_selector)
         output_col.addWidget(self.confirm_button)
+        output_col.addWidget(self.split_button)
 
         preprocess_col = QVBoxLayout()
         preprocess_col.addWidget(self.preprocess_label)
         preprocess_col.addWidget(self.strategy_box)
         preprocess_col.addWidget(self.constant_name_edit)
         preprocess_col.addWidget(self.apply_button)
-        preprocess_col.addWidget(self.split_button)
+
 
         # Group the layouts into another layout but this time a horizontal one
         container_selector_layout = QHBoxLayout()
@@ -223,16 +227,25 @@ class Window(QWidget):
         self.container_selector_widget.setLayout(container_selector_layout)
         self.container_preprocess_widget.setLayout(preprocess_col)
 
-        bottom_panel.addWidget(self.container_selector_widget, alignment=Qt.AlignLeft)
-        bottom_panel.addWidget(self.container_preprocess_widget, alignment=Qt.AlignRight)
+        bottom_panel_layout.addWidget(self.container_selector_widget)
+        bottom_panel_layout.addWidget(self.container_preprocess_widget, alignment=Qt.AlignRight)
 
-        self.bottom_panel_widget.setLayout(bottom_panel)
+        #set layouts on our widgets:
+        self.top_panel_widget.setLayout(top_panel_layout)
+        self.bottom_panel_widget.setLayout(bottom_panel_layout)
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(top_controls)
+        main_layout.addWidget(self.top_panel_widget)
         main_layout.addWidget(self.table)
         main_layout.addWidget(self.bottom_panel_widget)
-        main_layout.setStretch(1, 8)
+        #The sintax of this is simple. setStretch.(widget_indice,ammount of partitions)
+        #we sum all the ammount of partitions, 1 + 16 + 3 = 20. That means we
+        #divide the window into 20 pieces and assign 16 pieces to the table, 3
+        #pieces to the bottom_panel_widget and 1 piece to the top_pane_widget
+        main_layout.setStretch(0, 1)
+        main_layout.setStretch(1, 16)
+        main_layout.setStretch(2, 3)
+
         self.setLayout(main_layout)
 
         # ----------------- Data State -----------------
@@ -302,17 +315,31 @@ class Window(QWidget):
             self, "Selection confirmed",
             f"Inputs: {', '.join(self.selected_inputs)}\nOutput: {self.selected_output}"
         )
-
         # Show preprocessing controls once columns are selected
-        for w in [self.preprocess_label, self.strategy_box, self.apply_button, self.container_preprocess_widget]:
-            w.setVisible(True)
+        def show_preprocess_widgets(value : bool):
+            for w in [self.preprocess_label, self.strategy_box, self.apply_button, self.container_preprocess_widget]:
+                w.setVisible(value)
 
         # --- Call the set_highlight_by_missing() function with the selected
-        #cols
-        cols = self.selected_inputs + [self.selected_output]
+
+        # self.selected_inputs + [self.selected_output] -> Just a concatenation
+        # dict.fromkeys() dict is a class. This call the method fromkeys() of
+        # class dict that basically take every element from an iterable, in
+        # this case our list, and converted it to a key with default value None.
+        # Why this? Because the user can have -2 IQ and select the same input
+        # and output column, if this happens we are gonna work with a duplicated
+        # column, if we select a column "A" with NaN in input and output with
+        # 207 NaN for example, it will count twice and says we have 414
+        # NaN values, and when splitting we'll have duplicated columns
+        cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
         model = self.table.model()
         if hasattr(model, "set_highlight_by_missing"):
-            model.set_highlight_by_missing(cols)
+            if not model.set_highlight_by_missing(cols):
+                show_preprocess_widgets(False)
+                self.split_button.setVisible(True)
+            else:
+                self.split_button.setVisible(False)
+                show_preprocess_widgets(True)
 
     # Missing data detection and preprocessing
     def handle_missing_data(self):
@@ -320,7 +347,7 @@ class Window(QWidget):
             QMessageBox.warning(self, "Error", "No dataset loaded.")
             return
 
-        cols = self.selected_inputs + [self.selected_output]
+        cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
         df = self.current_df
         missing_counts = df[cols].isna().sum()
         total_missing = int(missing_counts.sum())
@@ -386,15 +413,26 @@ class Window(QWidget):
 
     # ----------------- TRAIN/TEST -----------------
     def open_split_window(self):
+        #cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
+        cols = [self.selected_output] + self.selected_inputs
         if self.current_df is None or self.current_df.empty:
             QMessageBox.warning(self, "Error", "There isn't any data avaliable to split.")
             return
 
-        self.split_window = SplitWidget(self.current_df)
+        self.split_window = SplitWidget(self.current_df[cols], parent=self)
+        #Just establish that the new widget is an independent window instead
+        #of a new widget inside our main Window
+        self.split_window.setWindowFlag(Qt.Window, True)
+        #Delete this widget when our main Window closses.
+        self.split_window.setAttribute(Qt.WA_DeleteOnClose, True)
         self.split_window.show()
 
 
     def dynamic_size(self):
+
+        #Note: with the refactoring this function is no longer needed
+        #but may be valuable in the future, please don't delete it.
+
         #Ok, this is a function that establish the height of the widgets
         #shown below, this solves all the inconsistencies with height that we
         #discussed previously. The problem was effectively fixed height using
@@ -405,18 +443,30 @@ class Window(QWidget):
 
         #In summary, these numbers are the percentage of the window
         selector_container_size_width = 0.75
-        preprocess_container_size = 0.15
-        bottom_panel_widget_mainimum_height = 0.2
-        bottom_panel_widget_minimum_height = 0.2
-        h = max(self.height(), 1) #When resizing could be less than 1 in some
+        preprocess_container_size_width = 0.15
         w = max(self.width(), 1)
         #cases, to avoid issues we establish this handler.
-        self.container_selector_widget.setFixedWidth(int(w * selector_container_size_width))
 
-        self.apply_button.setFixedWidth(int(w * preprocess_container_size))
+        #Width
+        #self.container_selector_widget.setFixedWidth(int(w * selector_container_size_width))
+        #self.apply_button.setFixedWidth(int(w * preprocess_container_size_width))
 
-        self.bottom_panel_widget.setMinimumHeight(int(h * bottom_panel_widget_minimum_height))
-        self.bottom_panel_widget.setMaximumHeight(int(h * bottom_panel_widget_mainimum_height))
+        #Height
+        #The bottom panel is fixed at minimum 110 pixels
+        #to not overlap the table in very low resolutions
+        #when I mean low, I really mean low, this program
+        #works without any issues until we reach 600 pixels
+        #in height, less than that we don't garanted that
+        #the program shows correctly(but it is really hard to
+        #have less than this, windows doesn't let you
+        #set a lower resolution than this one xd, same
+        #goes with mac, So it works in the lowest resolutions
+        #of these two SO). In normal situations the height
+        #of the bottom_panel is established using setStretch
+        #that basically divides the screen in n pieces and
+        #set a sub ammount of n to the top_panel - table and
+        #bottom_panel.
+        self.bottom_panel_widget.setMinimumHeight(110)
 
     def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
@@ -440,19 +490,26 @@ class Window(QWidget):
         self.dynamic_size()
         return super().resizeEvent(event)
     #--------------------------------------------------------
+
+# Popup
 class SplitWidget(QWidget):
+    #When we pass in the constructor an instance of our window. This tells
+    #PyQt that the new window in class SplitWidget is a child of Window
+    #This enables us to close the windows when our main window is closed.
+    #This didn't happen before.
     def __init__(self, df_preprocessed, parent=None):
         super().__init__(parent)
-        self.df = df_preprocessed
         self.splitter = DataSplitter()
+        self.df = df_preprocessed
         self.train_df = None
-        self.test_df = None
+        self.test_df  = None
         self.setup_ui()
 
     def setup_ui(self):
         layout = QVBoxLayout(self)
 
         # Entradas
+        #Inside the str are the default values written on the QLineEdit
         self.test_edit = QLineEdit("0.2")
         self.seed_edit = QLineEdit("42")
         btn = QPushButton("Split data")
@@ -479,15 +536,17 @@ class SplitWidget(QWidget):
         try:
             test_frac = float(self.test_edit.text())
             seed = int(self.seed_edit.text())
-
+            #self.splitter.split(...) returns a tuple of two values
+            #so we are storing those two values into self.train_df y
+            #self.test_df
             self.train_df, self.test_df = self.splitter.split(
                 self.df, test_size=test_frac, random_seed=seed
             )
             meta = self.splitter.get_meta()
 
             # Mostrar tablas
-            self.train_table.setModel(PandasModel(self.train_df))
             self.test_table.setModel(PandasModel(self.test_df))
+            self.train_table.setModel(PandasModel(self.splitter.train_df))
 
             # Mensaje
             QMessageBox.information(

@@ -8,8 +8,9 @@ class DataSplitError(Exception):
     pass
 
 class DataSplitter:
-    def _init_(self):
+    def __init__(self, df: pd.DataFrame = None):
         # Internal storage so other parts of the program can use it
+        self.df = df
         self.train_df: Optional[pd.DataFrame] = None
         self.test_df: Optional[pd.DataFrame] = None
         self.last_meta: Dict = {}
@@ -21,11 +22,14 @@ class DataSplitter:
         random_seed: Optional[int] = 42,
         shuffle: bool = True
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+        #handlers, should'nt be neccesary but well, never know.
         if df is None:
             raise DataSplitError("No dataframe loaded.")
         if not isinstance(df, pd.DataFrame):
             raise DataSplitError("The object isn't pandas.DataFrame.")
         n_rows = len(df)
+
         if n_rows < MIN_ROWS:
             raise DataSplitError(f"Not enough rows to split (it has {n_rows}, minimum {MIN_ROWS}).")
 
