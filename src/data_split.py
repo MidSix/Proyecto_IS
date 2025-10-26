@@ -28,6 +28,7 @@ class DataSplitter:
             raise DataSplitError("No dataframe loaded.")
         if not isinstance(df, pd.DataFrame):
             raise DataSplitError("The object isn't pandas.DataFrame.")
+
         n_rows = len(df)
 
         if n_rows < MIN_ROWS:

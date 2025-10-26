@@ -16,6 +16,16 @@ from data_split import DataSplitter,DataSplitError
 
 
 # Lightweight Qt model exposing a pandas.DataFrame to QTableView
+
+#This follows the MVC design pattern: model, view, controller.
+#So this class works as the model for the view in the table.
+#That means, here, inside this class lives the data shown in the table.
+#remember that an abstract class can't be instanciated directly
+#because it doesn't have the methods with the tag
+#@abstractmethod implemented. Just defines
+#some sort of contract in which the subclass of the abstractclass must
+#implement those methods to be instanciated. Those methods are the ones
+#we are doing polymorphism here: rowCount,columnCount,data
 class PandasModel(QAbstractTableModel):
     """Lightweight model: the view requests data lazily; no per-cell QTableWidgetItem."""
 
@@ -73,7 +83,7 @@ class PandasModel(QAbstractTableModel):
         """Highlight columns with at least one NaN value"""
         columns = columns or []
         # Looks complicated at first glance but it's not a big deal
-        #First of all is a set the avoid selecting duplicates columns(it could
+        #First of all is a set that avoid selecting duplicates columns(it could
         #happen when you select the same column in input-output, it's a trivial
         #regression but you never know what the user does). This is a set
         #comprehension. first we iterate over columns. Each c is a column
@@ -115,12 +125,22 @@ class PandasModel(QAbstractTableModel):
         self.beginResetModel()
         self._df = df
         self.endResetModel()
-# Main Window
+# Main Window - controler in the MVC design pattern
+# manages the interaction between user(view) and data(model).
 class Window(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Linear Regression - Data Preprocessing")
-        self.setWindowIcon(QIcon("icon.jpg"))
+        #All persistense .py files(stored in the computer) have a global
+        #variable __file__ that you can see printing the globals() namespace.
+        #This variable contains the path to the file. os.path.dirname(__file__)
+        #gets the directory path in which is stored the file. Because the icon
+        #is in the same directory(folder) we just apply a join and passes it
+        #as an argument to establish the icon to the program no matter where our
+        #worspace is, because we use absolute path this way, not relative ones
+        #that was established before.
+        self.gui_directory_path = os.path.dirname(__file__)
+        self.setWindowIcon(QIcon(os.path.join(self.gui_directory_path, "icon.jpg")))
 
         # ----------------- Panel Setup -----------------
         self.top_panel_widget = QWidget()
@@ -163,7 +183,7 @@ class Window(QWidget):
         self.confirm_button.clicked.connect(self.confirm_selection)
 
         # ----------------- Preprocessing Controls -----------------
-        self.preprocess_label = QLabel("Handle missing data:\nred columns have at least\none NaN value")
+        self.preprocess_label = QLabel("\nRed columns have at least\none NaN value")
         self.strategy_box = QComboBox()
         self.strategy_box.addItems([
             "Delete rows with NaN",
@@ -243,8 +263,8 @@ class Window(QWidget):
         #divide the window into 20 pieces and assign 16 pieces to the table, 3
         #pieces to the bottom_panel_widget and 1 piece to the top_pane_widget
         main_layout.setStretch(0, 1)
-        main_layout.setStretch(1, 16)
-        main_layout.setStretch(2, 3)
+        main_layout.setStretch(1, 20)
+        main_layout.setStretch(2, 7)
 
         self.setLayout(main_layout)
 
@@ -274,6 +294,7 @@ class Window(QWidget):
             self.load_table(df)
             QMessageBox.information(self, "Success", "File loaded successfully.")
             self.container_preprocess_widget.hide()
+            self.split_button.hide()
             self.show_column_selectors(df)
 
         except Exception as e:
@@ -333,6 +354,10 @@ class Window(QWidget):
         # NaN values, and when splitting we'll have duplicated columns
         cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
         model = self.table.model()
+        # model.set_highlight_by_missing(cols) is not empty if
+        # there are al least One NaN values in the selected columns
+        # and it's empty when there are no selected columns with NaN values
+        # So it's a conditional to prove when it's empty or not
         if hasattr(model, "set_highlight_by_missing"):
             if not model.set_highlight_by_missing(cols):
                 show_preprocess_widgets(False)
@@ -406,6 +431,7 @@ class Window(QWidget):
             QMessageBox.information(self, "Preprocessing Completed", msg)
 
             # Show split button after successful preprocessing
+            self.container_preprocess_widget.hide()
             self.split_button.setVisible(True)
 
         except Exception as e:
@@ -413,12 +439,14 @@ class Window(QWidget):
 
     # ----------------- TRAIN/TEST -----------------
     def open_split_window(self):
-        #cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
-        cols = [self.selected_output] + self.selected_inputs
+        model = self.table.model()
+        cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
         if self.current_df is None or self.current_df.empty:
             QMessageBox.warning(self, "Error", "There isn't any data avaliable to split.")
             return
-
+        if model.highlight_cols:
+            QMessageBox.warning(self, "Error", "There are missing data, please preprocess it first.")
+            return
         self.split_window = SplitWidget(self.current_df[cols], parent=self)
         #Just establish that the new widget is an independent window instead
         #of a new widget inside our main Window
@@ -491,7 +519,7 @@ class Window(QWidget):
         return super().resizeEvent(event)
     #--------------------------------------------------------
 
-# Popup
+# Popup - controler for the task of split - child of Window.
 class SplitWidget(QWidget):
     #When we pass in the constructor an instance of our window. This tells
     #PyQt that the new window in class SplitWidget is a child of Window
@@ -538,12 +566,12 @@ class SplitWidget(QWidget):
             seed = int(self.seed_edit.text())
             #self.splitter.split(...) returns a tuple of two values
             #so we are storing those two values into self.train_df y
-            #self.test_df
+            #self.test_df, meeting one of the DoD requirements
+            #"Los conjuntos de entrenamiento y test quedan almacenados internamente para ser usados #posteriormente."
             self.train_df, self.test_df = self.splitter.split(
                 self.df, test_size=test_frac, random_seed=seed
             )
-            meta = self.splitter.get_meta()
-
+            summary = self.splitter.get_meta()
             # Mostrar tablas
             self.test_table.setModel(PandasModel(self.test_df))
             self.train_table.setModel(PandasModel(self.splitter.train_df))
@@ -553,8 +581,8 @@ class SplitWidget(QWidget):
                 self,
                 "Split successfully completed",
                 f"Division was correctly done.\n\n"
-                f"Training set: {meta['n_train']} rows\n"
-                f"Test set: {meta['n_test']} rows"
+                f"Training set: {summary['n_train']} rows\n"
+                f"Test set: {summary['n_test']} rows"
             )
 
         except (ValueError, DataSplitError) as e:
@@ -564,7 +592,6 @@ class SplitWidget(QWidget):
 def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-
     window = Window()
     window.showMaximized()
     sys.exit(app.exec_())
