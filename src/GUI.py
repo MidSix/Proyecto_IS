@@ -1,22 +1,29 @@
 # -*- coding: utf-8 -*-
 import sys
+import os
 import pandas as pd
+import qdarkstyle
 from data_module import *
 
 from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
-    QComboBox
+    QComboBox,
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
-import qdarkstyle
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QLabel, QLineEdit, QPushButton, QMessageBox
 from data_split import DataSplitter,DataSplitError
+from AppKit import NSApplication, NSImage
 
+#All persistense .py files(stored in the computer) have a global
+#variable __file__ that you can see printing the globals() namespace.
+#This variable contains the path to the file. os.path.dirname(__file__)
+#gets the directory path in which is stored the file. Because the icon
+#is in the same directory(folder) we just apply a join and get the path
+#to our ICON no matter where our workspace is.
+ICON = os.path.join(os.path.dirname(__file__), "icon.jpg") #Global inmutable cte
 
 # Lightweight Qt model exposing a pandas.DataFrame to QTableView
-
 #This follows the MVC design pattern: model, view, controller.
 #So this class works as the model for the view in the table.
 #That means, here, inside this class lives the data shown in the table.
@@ -125,35 +132,24 @@ class PandasModel(QAbstractTableModel):
         self.beginResetModel()
         self._df = df
         self.endResetModel()
+
 # Main Window - controler in the MVC design pattern
 # manages the interaction between user(view) and data(model).
 class Window(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Linear Regression - Data Preprocessing")
-        #All persistense .py files(stored in the computer) have a global
-        #variable __file__ that you can see printing the globals() namespace.
-        #This variable contains the path to the file. os.path.dirname(__file__)
-        #gets the directory path in which is stored the file. Because the icon
-        #is in the same directory(folder) we just apply a join and passes it
-        #as an argument to establish the icon to the program no matter where our
-        #worspace is, because we use absolute path this way, not relative ones
-        #that was established before.
-        self.gui_directory_path = os.path.dirname(__file__)
-        self.setWindowIcon(QIcon(os.path.join(self.gui_directory_path, "icon.jpg")))
-
         # ----------------- Panel Setup -----------------
         self.top_panel_widget = QWidget()
         self.bottom_panel_widget = QWidget()
-        # ----------------- File Load Section -----------------
+        # ----------------- Top setup -----------------
         self.label = QLabel("Path")
         self.path_display = QLineEdit()
         self.path_display.setPlaceholderText("Select a file to load the data")
         self.path_display.setReadOnly(True)
         self.btn_open_file = QPushButton("Open File")
         self.btn_open_file.clicked.connect(self.choose_file)
-
-        # ----------------- Table Section -----------------
+        # ----------------- Table setup -----------------
         self.table = QTableView()
         self.table.setSortingEnabled(True)
         self.table.setAlternatingRowColors(True)
@@ -166,7 +162,7 @@ class Window(QWidget):
         vh.setDefaultSectionSize(24)
         vh.setMinimumSectionSize(20)
 
-        # ----------------- bottom setup -----------------
+        # ----------------- bottom setup - input -----------------
         self.container_selector_widget = QWidget()
         self.container_preprocess_widget = QWidget()
         self.input_label = QLabel("Select input columns (features)")
@@ -182,8 +178,10 @@ class Window(QWidget):
         self.confirm_button = QPushButton("Confirm selection")
         self.confirm_button.clicked.connect(self.confirm_selection)
 
-        # ----------------- Preprocessing Controls -----------------
-        self.preprocess_label = QLabel("\nRed columns have at least\none NaN value")
+        self.split_button = QPushButton("Split data into training/test")
+        self.split_button.clicked.connect(self.open_split_window)
+        # ----------------- bottom setup - output -----------------
+        self.preprocess_label = QLabel("Handle missing data:\nRed columns have at least\none NaN value")
         self.strategy_box = QComboBox()
         self.strategy_box.addItems([
             "Delete rows with NaN",
@@ -197,19 +195,16 @@ class Window(QWidget):
         self.constant_name_edit = QLineEdit()
         self.constant_name_edit.setPlaceholderText("Constant name")
 
-        # ----------------- Split Button -----------------
-        self.split_button = QPushButton("Split data into training/test")
-        self.split_button.clicked.connect(self.open_split_window)
-        self.split_button.setVisible(False)
-
-        # Initially hidden
-        for w in [
+        # ----------------- Set visibility -----------------
+        widgets = [
             self.input_label, self.input_selector, self.output_label,
             self.output_selector, self.confirm_button, self.preprocess_label,
             self.strategy_box, self.apply_button, self.constant_name_edit,
             self.split_button
-        ]:
-            w.setVisible(False)
+            ]
+        def hide_widgets():
+            for w in widgets:
+                w.setVisible(False)
 
         # ----------------- Layout setup -----------------
         top_panel_layout = QHBoxLayout()
@@ -219,7 +214,6 @@ class Window(QWidget):
 
         #Bottom_layout:
         bottom_panel_layout = QHBoxLayout()
-
         # Creation of vertical views and stack the widgets on it.
         input_col = QVBoxLayout()
         input_col.addWidget(self.input_label)
@@ -253,6 +247,15 @@ class Window(QWidget):
         #set layouts on our widgets:
         self.top_panel_widget.setLayout(top_panel_layout)
         self.bottom_panel_widget.setLayout(bottom_panel_layout)
+
+        #Important! here we are setting the min and max height
+        #the bottom_panel_widget must have in order to show correctly
+        #in the smalest resolutions and biggest resolutions.
+        #for mid resolutions we established setStretch.
+        c_p_w, c_s_w, b_p_w = self.container_preprocess_widget,self.container_selector_widget, self.bottom_panel_widget
+        b_p_w.setMinimumHeight(c_p_w.layout().sizeHint().height()+ 18)
+        b_p_w.setMaximumHeight(c_s_w.layout().sizeHint().height())
+        hide_widgets()
 
         main_layout = QVBoxLayout()
         main_layout.addWidget(self.top_panel_widget)
@@ -457,7 +460,8 @@ class Window(QWidget):
 
 
     def dynamic_size(self):
-
+        #h = max(self.height(),1)
+        #print(h)
         #Note: with the refactoring this function is no longer needed
         #but may be valuable in the future, please don't delete it.
 
@@ -470,9 +474,9 @@ class Window(QWidget):
         #potato resolution, all take the same ammount of screen.
 
         #In summary, these numbers are the percentage of the window
-        selector_container_size_width = 0.75
-        preprocess_container_size_width = 0.15
-        w = max(self.width(), 1)
+        #selector_container_size_width = 0.75
+        #preprocess_container_size_width = 0.15
+        #w = max(self.width(), 1)
         #cases, to avoid issues we establish this handler.
 
         #Width
@@ -494,8 +498,7 @@ class Window(QWidget):
         #that basically divides the screen in n pieces and
         #set a sub ammount of n to the top_panel - table and
         #bottom_panel.
-        self.bottom_panel_widget.setMinimumHeight(110)
-
+        return None
     def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
         self.constant_name_edit.setVisible(is_cte)
@@ -588,10 +591,28 @@ class SplitWidget(QWidget):
         except (ValueError, DataSplitError) as e:
             QMessageBox.critical(self, "Error", str(e))
 
+# Just a function to set the icon.jpg as the app icon and as the docker icon
+# at the moment just compatible with MacOS.
+def set_app_icon(app):
+    #ICON is a global inmutable constant. No need to declare global
+    #cause we are not going to redefine it, just read the value. So global
+    #Is unnecesary
+    app.setWindowIcon(QIcon(ICON))
+    # darwin is like the kernel of Mac. So when you ask which the sys its name
+    # just returns "darwin" in MacOS
+    if sys.platform == "darwin":
+        try:
+            img = NSImage.alloc().initWithContentsOfFile_(ICON)
+            if img is not None:
+                NSApplication.sharedApplication().setApplicationIconImage_(img)
+        except Exception:
+            pass
+
 # Entry point
 def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
+    set_app_icon(app)
     window = Window()
     window.showMaximized()
     sys.exit(app.exec_())
