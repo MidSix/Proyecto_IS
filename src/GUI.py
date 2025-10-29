@@ -5,7 +5,7 @@ import pandas as pd
 import qdarkstyle
 from data_module import *
 
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant, QTimer
+from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
@@ -521,46 +521,7 @@ class Window(QWidget):
         self.summary_split_label.setText(msg_summary)
         for w in widgets:
             w.setVisible(True)
-    def dynamic_size(self):
-        #h = max(self.height(),1)
-        #print(h)
-        #Note: with the refactoring this function is no longer needed
-        #but may be valuable in the future, please don't delete it.
 
-        #Ok, this is a function that establish the height of the widgets
-        #shown below, this solves all the inconsistencies with height that we
-        #discussed previously. The problem was effectively fixed height using
-        #pixels, this naturally changes how the program looks with different
-        #resolutions but this is not a problem anymore, the height is measured
-        #using a percentage of your window, so with 4k resolution, HD resolution
-        #potato resolution, all take the same ammount of screen.
-
-        #In summary, these numbers are the percentage of the window
-        #selector_container_size_width = 0.75
-        #preprocess_container_size_width = 0.15
-        #w = max(self.width(), 1)
-        #cases, to avoid issues we establish this handler.
-
-        #Width
-        #self.container_selector_widget.setFixedWidth(int(w * selector_container_size_width))
-        #self.apply_button.setFixedWidth(int(w * preprocess_container_size_width))
-
-        #Height
-        #The bottom panel is fixed at minimum 110 pixels
-        #to not overlap the table in very low resolutions
-        #when I mean low, I really mean low, this program
-        #works without any issues until we reach 600 pixels
-        #in height, less than that we don't garanted that
-        #the program shows correctly(but it is really hard to
-        #have less than this, windows doesn't let you
-        #set a lower resolution than this one xd, same
-        #goes with mac, So it works in the lowest resolutions
-        #of these two SO). In normal situations the height
-        #of the bottom_panel is established using setStretch
-        #that basically divides the screen in n pieces and
-        #set a sub ammount of n to the top_panel - table and
-        #bottom_panel.
-        return None
     def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
         self.constant_name_edit.setVisible(is_cte)
@@ -569,77 +530,6 @@ class Window(QWidget):
         else:
             self.constant_name_edit.clear()
         return None
-    #--------------------------------------------------------
-    #ShowEvent, resizeEvent: are methods from Qwidget, here we are applying
-    #Polymorphism, changing the behaviour of the superclass methods in our
-    #subclass Window. By calling our own
-    #dynamic_size when they execute. So when we resize and show windows
-    #we automatically are applying dynamic_size
-    def showEvent(self, event):
-        super().showEvent(event)
-        self.dynamic_size()
-
-    def resizeEvent(self, event):
-        self.dynamic_size()
-        return super().resizeEvent(event)
-    #--------------------------------------------------------
-
-# # Popup - controler for the task of split - child of Window.
-# class SplitWidget(QWidget):
-#     #When we pass in the constructor an instance of our window. This tells
-#     #PyQt that the new window in class SplitWidget is a child of Window
-#     #This enables us to close the windows when our main window is closed.
-#     #This didn't happen before.
-#     def __init__(self, df_preprocessed, parent=None):
-#         super().__init__(parent)
-#         self.splitter = DataSplitter()
-#         self.df = df_preprocessed
-#         self.train_df = None
-#         self.test_df  = None
-#         self.setup_ui()
-
-#     def setup_ui(self):
-#         layout = QVBoxLayout(self)
-
-#         # Entradas
-#         #Inside the str are the default values written on the QLineEdit
-#         self.test_edit = QLineEdit("0.2")
-#         self.seed_edit = QLineEdit("42")
-#         btn = QPushButton("Split data")
-#         #btn.clicked.connect(self.on_split)
-
-#         # Layout
-#         layout.addWidget(QLabel("Test fraction (e.g. 0.2):"))
-#         layout.addWidget(self.test_edit)
-#         layout.addWidget(QLabel("Seed (reproducibility):"))
-#         layout.addWidget(self.seed_edit)
-#         layout.addWidget(btn)
-
-    # def on_split(self):
-    #     try:
-    #         test_frac = float(self.test_edit.text())
-    #         seed = int(self.seed_edit.text())
-    #         #self.splitter.split(...) returns a tuple of two values
-    #         #so we are storing those two values into self.train_df y
-    #         #self.test_df, meeting one of the DoD requirements
-    #         #"Los conjuntos de entrenamiento y test quedan almacenados internamente para ser usados #posteriormente."
-    #         self.train_df, self.test_df = self.splitter.split(
-    #             self.df, test_size=test_frac, random_seed=seed
-    #         )
-    #         summary = self.splitter.get_meta()
-    #         # Mostrar tablas
-
-    #         # Mensaje
-    #         QMessageBox.information(
-    #             self,
-    #             "Split successfully completed",
-    #             f"Division was correctly done.\n\n"
-    #             f"Training set: {summary['n_train']} rows\n"
-    #             f"Test set: {summary['n_test']} rows"
-    #         )
-
-    #     except (ValueError, DataSplitError) as e:
-    #         QMessageBox.critical(self, "Error", str(e))
 
 # Just a function to set the icon.jpg as the app icon and as the docker icon
 # at the moment just compatible with MacOS.
