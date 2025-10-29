@@ -5,11 +5,11 @@ import pandas as pd
 import qdarkstyle
 from data_module import *
 
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
+from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant, QTimer
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
-    QComboBox,
+    QComboBox, QSizePolicy
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
 from data_split import DataSplitter,DataSplitError
@@ -165,21 +165,22 @@ class Window(QWidget):
         # ----------------- bottom setup - input -----------------
         self.container_selector_widget = QWidget()
         self.container_preprocess_widget = QWidget()
-        self.input_label = QLabel("Select input columns (features)")
+        self.container_splitter_widget = QWidget()
+
+        self.input_label = QLabel("Input columns (features)")
         self.input_selector = QListWidget()
         self.input_selector.setSelectionMode(QAbstractItemView.MultiSelection)
-        # Make the list compact and scrollable instead of expanding and stealing space
+        self.input_selector.itemClicked.connect(self.selected_item_changed)
         self.input_selector.setUniformItemSizes(True)
         self.input_selector.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        self.output_label = QLabel("Select output column (target)")
+        self.output_label = QLabel("Output column (target)")
         self.output_selector = QComboBox()
+        self.output_selector.currentIndexChanged.connect(self.selected_item_changed)
 
         self.confirm_button = QPushButton("Confirm selection")
         self.confirm_button.clicked.connect(self.confirm_selection)
 
-        self.split_button = QPushButton("Split data into training/test")
-        self.split_button.clicked.connect(self.open_split_window)
         # ----------------- bottom setup - output -----------------
         self.preprocess_label = QLabel("Handle missing data:\nRed columns have at least\none NaN value")
         self.strategy_box = QComboBox()
@@ -195,12 +196,24 @@ class Window(QWidget):
         self.constant_name_edit = QLineEdit()
         self.constant_name_edit.setPlaceholderText("Constant name")
 
+        # ----------------- bottom setup - splitter -----------------
+        self.splitter = DataSplitter()
+        self.test_edit_label = QLabel("Test fraction (e.g. 0.2):")
+        self.test_edit = QLineEdit("0.2")
+        self.seed_edit_label = QLabel("Seed (reproducibility):")
+        self.seed_edit = QLineEdit("42")
+        self.split_button = QPushButton("Split data into training/test")
+        self.split_button.clicked.connect(self.splitting_dataframe)
+        # ----------------- bottom setup - splitter -----------------
+        self.summary_split_label = QLabel()
         # ----------------- Set visibility -----------------
         widgets = [
             self.input_label, self.input_selector, self.output_label,
             self.output_selector, self.confirm_button, self.preprocess_label,
             self.strategy_box, self.apply_button, self.constant_name_edit,
-            self.split_button
+            self.split_button, self.test_edit, self.seed_edit,
+            self.test_edit_label, self.seed_edit_label,
+            self.summary_split_label
             ]
         def hide_widgets():
             for w in widgets:
@@ -214,6 +227,7 @@ class Window(QWidget):
 
         #Bottom_layout:
         bottom_panel_layout = QHBoxLayout()
+
         # Creation of vertical views and stack the widgets on it.
         input_col = QVBoxLayout()
         input_col.addWidget(self.input_label)
@@ -223,7 +237,6 @@ class Window(QWidget):
         output_col.addWidget(self.output_label)
         output_col.addWidget(self.output_selector)
         output_col.addWidget(self.confirm_button)
-        output_col.addWidget(self.split_button)
 
         preprocess_col = QVBoxLayout()
         preprocess_col.addWidget(self.preprocess_label)
@@ -231,23 +244,47 @@ class Window(QWidget):
         preprocess_col.addWidget(self.constant_name_edit)
         preprocess_col.addWidget(self.apply_button)
 
+        splitter_col = QVBoxLayout()
+        splitter_col.addWidget(self.test_edit_label)
+        splitter_col.addWidget(self.test_edit)
+        splitter_col.addWidget(self.seed_edit_label)
+        splitter_col.addWidget(self.seed_edit)
+        splitter_col.addWidget(self.split_button)
 
+        splitter_confirmation_col = QVBoxLayout()
+        splitter_confirmation_col.addWidget(self.summary_split_label)
         # Group the layouts into another layout but this time a horizontal one
         container_selector_layout = QHBoxLayout()
         container_selector_layout.addLayout(input_col)
         container_selector_layout.addLayout(output_col)
 
+        container_splitter_layout = QHBoxLayout()
+        container_splitter_layout.addLayout(splitter_col)
+        container_splitter_layout.addLayout(splitter_confirmation_col)
+
         #Envolpe the layout into a widget, this is for setting maximum width
         self.container_selector_widget.setLayout(container_selector_layout)
         self.container_preprocess_widget.setLayout(preprocess_col)
+        self.container_splitter_widget.setLayout(container_splitter_layout)
 
-        bottom_panel_layout.addWidget(self.container_selector_widget)
-        bottom_panel_layout.addWidget(self.container_preprocess_widget, alignment=Qt.AlignRight)
+        bottom_panel_layout.addWidget(self.container_selector_widget, alignment=Qt.AlignLeft)
+        bottom_panel_layout.addWidget(self.container_preprocess_widget, alignment=Qt.AlignLeft)
+        bottom_panel_layout.addWidget(self.container_splitter_widget, alignment=Qt.AlignLeft)
 
         #set layouts on our widgets:
         self.top_panel_widget.setLayout(top_panel_layout)
         self.bottom_panel_widget.setLayout(bottom_panel_layout)
-
+        #This size policy tells the inmediate superior layout how to set width
+        #and height to this widget using its sizeHint[It's the recommended size
+        #a widget should have to displayed everything inside it correctly]
+        #So who is the inmediate superior layout? main_layout. This SizePolicy
+        #is telling main_layout how to treat bottom_panel. It's saying:
+        #Don't let it have a width bigger than its sizeHint(minimum size
+        #in which everything looks good) and height don't care(second argument)
+        #In order to bottom_panel_widget has the minimum width all its children
+        #must be next to each other which is what we want, so with a single line
+        #we solve the problem xd.
+        self.bottom_panel_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         #Important! here we are setting the min and max height
         #the bottom_panel_widget must have in order to show correctly
         #in the smalest resolutions and biggest resolutions.
@@ -270,7 +307,6 @@ class Window(QWidget):
         main_layout.setStretch(2, 7)
 
         self.setLayout(main_layout)
-
         # ----------------- Data State -----------------
         self.data = DataModule()
         self.current_df = None
@@ -278,6 +314,12 @@ class Window(QWidget):
         self.selected_output = None
 
     # ------------------- Methods ------------------------------------------------
+    def selected_item_changed(self, text):
+        elements = [self.container_preprocess_widget, self.container_splitter_widget]
+        for element in elements:
+            if element.isVisible():
+                element.setVisible(False)
+
     def choose_file(self):
         ruta, _ = QFileDialog.getOpenFileName(
             self, "Select a file", "",
@@ -297,7 +339,7 @@ class Window(QWidget):
             self.load_table(df)
             QMessageBox.information(self, "Success", "File loaded successfully.")
             self.container_preprocess_widget.hide()
-            self.split_button.hide()
+            self.container_splitter_widget.hide()
             self.show_column_selectors(df)
 
         except Exception as e:
@@ -339,11 +381,20 @@ class Window(QWidget):
             self, "Selection confirmed",
             f"Inputs: {', '.join(self.selected_inputs)}\nOutput: {self.selected_output}"
         )
+        self.constant_name_edit.clear() #To clear the constant_name when we
+        #confirm selection.
         # Show preprocessing controls once columns are selected
-        def show_preprocess_widgets(value : bool):
-            for w in [self.preprocess_label, self.strategy_box, self.apply_button, self.container_preprocess_widget]:
-                w.setVisible(value)
+        preprocess_widgets = [self.preprocess_label, self.strategy_box,
+        self.apply_button, self.container_preprocess_widget]
 
+        splitter_widgets = [self.test_edit_label,self.test_edit,
+        self.seed_edit_label,self.seed_edit, self.split_button]
+
+        for w in preprocess_widgets + splitter_widgets:
+            w.setVisible(True)
+
+        self.container_preprocess_widget.setVisible(False)
+        self.container_splitter_widget.setVisible(False)
         # --- Call the set_highlight_by_missing() function with the selected
 
         # self.selected_inputs + [self.selected_output] -> Just a concatenation
@@ -363,12 +414,13 @@ class Window(QWidget):
         # So it's a conditional to prove when it's empty or not
         if hasattr(model, "set_highlight_by_missing"):
             if not model.set_highlight_by_missing(cols):
-                show_preprocess_widgets(False)
-                self.split_button.setVisible(True)
+                self.container_preprocess_widget.setVisible(False)
+                self.container_splitter_widget.setVisible(True)
+                if self.summary_split_label.isVisible():
+                    self.summary_split_label.setVisible(False)
             else:
-                self.split_button.setVisible(False)
-                show_preprocess_widgets(True)
-
+                self.container_splitter_widget.setVisible(False)
+                self.container_preprocess_widget.setVisible(True)
     # Missing data detection and preprocessing
     def handle_missing_data(self):
         if self.current_df is None:
@@ -435,30 +487,40 @@ class Window(QWidget):
 
             # Show split button after successful preprocessing
             self.container_preprocess_widget.hide()
-            self.split_button.setVisible(True)
+            self.container_splitter_widget.show()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error during preprocessing:\n{str(e)}")
 
     # ----------------- TRAIN/TEST -----------------
-    def open_split_window(self):
+    def splitting_dataframe(self):
+        widgets = [self.summary_split_label]
         model = self.table.model()
-        cols = list(dict.fromkeys([self.selected_output] + self.selected_inputs))
+        cols = self.selected_inputs + [self.selected_output]
         if self.current_df is None or self.current_df.empty:
             QMessageBox.warning(self, "Error", "There isn't any data avaliable to split.")
             return
         if model.highlight_cols:
             QMessageBox.warning(self, "Error", "There are missing data, please preprocess it first.")
             return
-        self.split_window = SplitWidget(self.current_df[cols], parent=self)
-        #Just establish that the new widget is an independent window instead
-        #of a new widget inside our main Window
-        self.split_window.setWindowFlag(Qt.Window, True)
-        #Delete this widget when our main Window closses.
-        self.split_window.setAttribute(Qt.WA_DeleteOnClose, True)
-        self.split_window.show()
+        test_size = float(self.test_edit.text())
+        seed = int(self.seed_edit.text())
+        self.train_df, self.test_df = self.splitter.split(self.current_df[cols], test_size, seed)
+        summary = self.splitter.get_meta()
+        # Mensaje
+        msg_summary = (
+        "Division was correctly done.\n\n"
+        f"Total df: {summary["n_rows_total"]} rows\n"
+        f"Training df: {summary['n_train']} rows\n"
+        f"Test df: {summary['n_test']} rows\n"
+        f"Seed used: {summary['random_seed']}"
+        )
+        print(msg_summary)
+        QMessageBox.information(self,"succesful",msg_summary)
 
-
+        self.summary_split_label.setText(msg_summary)
+        for w in widgets:
+            w.setVisible(True)
     def dynamic_size(self):
         #h = max(self.height(),1)
         #print(h)
@@ -522,74 +584,62 @@ class Window(QWidget):
         return super().resizeEvent(event)
     #--------------------------------------------------------
 
-# Popup - controler for the task of split - child of Window.
-class SplitWidget(QWidget):
-    #When we pass in the constructor an instance of our window. This tells
-    #PyQt that the new window in class SplitWidget is a child of Window
-    #This enables us to close the windows when our main window is closed.
-    #This didn't happen before.
-    def __init__(self, df_preprocessed, parent=None):
-        super().__init__(parent)
-        self.splitter = DataSplitter()
-        self.df = df_preprocessed
-        self.train_df = None
-        self.test_df  = None
-        self.setup_ui()
+# # Popup - controler for the task of split - child of Window.
+# class SplitWidget(QWidget):
+#     #When we pass in the constructor an instance of our window. This tells
+#     #PyQt that the new window in class SplitWidget is a child of Window
+#     #This enables us to close the windows when our main window is closed.
+#     #This didn't happen before.
+#     def __init__(self, df_preprocessed, parent=None):
+#         super().__init__(parent)
+#         self.splitter = DataSplitter()
+#         self.df = df_preprocessed
+#         self.train_df = None
+#         self.test_df  = None
+#         self.setup_ui()
 
-    def setup_ui(self):
-        layout = QVBoxLayout(self)
+#     def setup_ui(self):
+#         layout = QVBoxLayout(self)
 
-        # Entradas
-        #Inside the str are the default values written on the QLineEdit
-        self.test_edit = QLineEdit("0.2")
-        self.seed_edit = QLineEdit("42")
-        btn = QPushButton("Split data")
-        btn.clicked.connect(self.on_split)
+#         # Entradas
+#         #Inside the str are the default values written on the QLineEdit
+#         self.test_edit = QLineEdit("0.2")
+#         self.seed_edit = QLineEdit("42")
+#         btn = QPushButton("Split data")
+#         #btn.clicked.connect(self.on_split)
 
-        # Tablas para mostrar los datos
-        self.train_label = QLabel("Training set:")
-        self.train_table = QTableView()
-        self.test_label = QLabel("Test set:")
-        self.test_table = QTableView()
+#         # Layout
+#         layout.addWidget(QLabel("Test fraction (e.g. 0.2):"))
+#         layout.addWidget(self.test_edit)
+#         layout.addWidget(QLabel("Seed (reproducibility):"))
+#         layout.addWidget(self.seed_edit)
+#         layout.addWidget(btn)
 
-        # Layout
-        layout.addWidget(QLabel("Test fraction (e.g. 0.2):"))
-        layout.addWidget(self.test_edit)
-        layout.addWidget(QLabel("Seed (reproducibility):"))
-        layout.addWidget(self.seed_edit)
-        layout.addWidget(btn)
-        layout.addWidget(self.train_label)
-        layout.addWidget(self.train_table)
-        layout.addWidget(self.test_label)
-        layout.addWidget(self.test_table)
+    # def on_split(self):
+    #     try:
+    #         test_frac = float(self.test_edit.text())
+    #         seed = int(self.seed_edit.text())
+    #         #self.splitter.split(...) returns a tuple of two values
+    #         #so we are storing those two values into self.train_df y
+    #         #self.test_df, meeting one of the DoD requirements
+    #         #"Los conjuntos de entrenamiento y test quedan almacenados internamente para ser usados #posteriormente."
+    #         self.train_df, self.test_df = self.splitter.split(
+    #             self.df, test_size=test_frac, random_seed=seed
+    #         )
+    #         summary = self.splitter.get_meta()
+    #         # Mostrar tablas
 
-    def on_split(self):
-        try:
-            test_frac = float(self.test_edit.text())
-            seed = int(self.seed_edit.text())
-            #self.splitter.split(...) returns a tuple of two values
-            #so we are storing those two values into self.train_df y
-            #self.test_df, meeting one of the DoD requirements
-            #"Los conjuntos de entrenamiento y test quedan almacenados internamente para ser usados #posteriormente."
-            self.train_df, self.test_df = self.splitter.split(
-                self.df, test_size=test_frac, random_seed=seed
-            )
-            summary = self.splitter.get_meta()
-            # Mostrar tablas
-            self.test_table.setModel(PandasModel(self.test_df))
-            self.train_table.setModel(PandasModel(self.splitter.train_df))
+    #         # Mensaje
+    #         QMessageBox.information(
+    #             self,
+    #             "Split successfully completed",
+    #             f"Division was correctly done.\n\n"
+    #             f"Training set: {summary['n_train']} rows\n"
+    #             f"Test set: {summary['n_test']} rows"
+    #         )
 
-            # Mensaje
-            QMessageBox.information(
-                self,
-                "Split successfully completed",
-                f"Division was correctly done.\n\n"
-                f"Training set: {summary['n_train']} rows\n"
-                f"Test set: {summary['n_test']} rows"
-            )
-
-        except (ValueError, DataSplitError) as e:
-            QMessageBox.critical(self, "Error", str(e))
+    #     except (ValueError, DataSplitError) as e:
+    #         QMessageBox.critical(self, "Error", str(e))
 
 # Just a function to set the icon.jpg as the app icon and as the docker icon
 # at the moment just compatible with MacOS.

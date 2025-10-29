@@ -1,6 +1,7 @@
 from typing import Tuple, Optional, Dict
 import pandas as pd
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 MIN_ROWS = 5
 
@@ -17,7 +18,7 @@ class DataSplitter:
 
     def split(
         self,
-        df: pd.DataFrame,
+        df: pd.DataFrame = None,
         test_size: float = 0.2,
         random_seed: Optional[int] = 42,
         shuffle: bool = True
@@ -58,3 +59,34 @@ class DataSplitter:
 
     def has_split(self) -> bool:
         return self.train_df is not None and self.test_df is not None
+
+
+    def test_class(self):
+        print(df.shape)
+        objeto = DataSplitter(df)
+        a,b = objeto.split()
+        print("Training set")
+        print(a)
+        print()
+        print("Test set")
+        print(b)
+
+if __name__ == "__main__":
+    df = pd.DataFrame({
+    "Edad": [25, 30, np.nan, 40, 35],
+    "Altura": [1.75, 1.80, 1.65, np.nan, 1.70],
+    "Peso": [70, 80, 60, 90, np.nan],
+    "Genero": ["M", "M", "F", "M", "F"],
+    "Salario": [30000, 40000, np.nan, 50000, 35000]
+    })
+    objeto = DataSplitter(df)
+    #objeto.test_class()
+    msg_summary = (
+    "Division was correctly done.\n\n"
+    f"Total df: rows\n"
+    f"Training df: rows\n"
+    f"Test df:  rows\n"
+    f"Seed used:"
+    )
+    print(msg_summary)
+    print(type(msg_summary))
