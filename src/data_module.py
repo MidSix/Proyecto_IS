@@ -116,6 +116,7 @@ class DataModule:
         self.set_current_file(file_name)
         self.load_data()
         return self.current_dataframe, self.error_message
+
     #------ Functions added for linear regression testing purposes ------
     def get_features(self) -> pd.DataFrame: #This function returns all columns except the last one, this aims to get
         #the features for linear models, to summarize, all columns except the last one are features, last column is target
@@ -125,13 +126,13 @@ class DataModule:
             print("Dataframe is empty. Load data first.")
             return None
         return self.current_dataframe.iloc[:, :-1] #All rows, all columns except the last one
-    
+
     def get_target(self) -> pd.Series:#As previously explained, this function is to get the target variable, which is the last column
         if self.is_empty():
             print("Dataframe is empty. Load data first.")
             return None
         return self.current_dataframe.iloc[:, -1] #All rows, only the last column
-    
+
     def direct_data_load(self, data:pd.DataFrame)->bool:
          #This function was added for testing purposes mainly, to load data directly from a pandas dataframe
          #Primarily for the linear regression testing module

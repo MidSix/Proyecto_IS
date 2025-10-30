@@ -9,11 +9,11 @@ from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
-    QComboBox, QSizePolicy
+    QComboBox, QSizePolicy, QStackedWidget
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
 from data_split import DataSplitter,DataSplitError
-from AppKit import NSApplication, NSImage
+#from AppKit import NSApplication, NSImage
 
 #All persistense .py files(stored in the computer) have a global
 #variable __file__ that you can see printing the globals() namespace.
@@ -135,10 +135,11 @@ class PandasModel(QAbstractTableModel):
 
 # Main Window - controler in the MVC design pattern
 # manages the interaction between user(view) and data(model).
-class Window(QWidget):
-    def __init__(self):
+class SetupWindow(QWidget):
+    def __init__(self, stacked_widget):
         super().__init__()
-        self.setWindowTitle("Linear Regression - Data Preprocessing")
+        self.setWindowTitle("Linear Regression - Setup")
+        self.stacked_widget = stacked_widget
         # ----------------- Panel Setup -----------------
         self.top_panel_widget = QWidget()
         self.bottom_panel_widget = QWidget()
@@ -304,7 +305,7 @@ class Window(QWidget):
         #pieces to the bottom_panel_widget and 1 piece to the top_pane_widget
         main_layout.setStretch(0, 1)
         main_layout.setStretch(1, 20)
-        main_layout.setStretch(2, 7)
+        main_layout.setStretch(2, 4)
 
         self.setLayout(main_layout)
         # ----------------- Data State -----------------
@@ -531,6 +532,74 @@ class Window(QWidget):
             self.constant_name_edit.clear()
         return None
 
+    def go_to_result_window(self):
+        self.stacked_widget.setCurrentIndex(1)  # cambia a la segunda ventana
+
+class ResultWindow(QWidget):
+    def __init__(self, stacked_widget):
+        super().__init__()
+        self.stacked_widget = stacked_widget
+        self.placeholder_text = QLabel(
+        "Remember that to access this feature\n"
+        "you first need to load the data,\n"
+        "preprocess if needed and split\n"
+        "the data into training and test sets.\n"
+        )
+
+        self.placeholder_text.setAlignment(Qt.AlignCenter)
+        self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
+
+        layout = QVBoxLayout()
+        #Con layout.addWidget(widget, stretch) le asignas el factor de stretch al añadir el widget.
+        #Con layout.setStretch(indice, stretch) ajustas el factor de stretch después, refiriéndote al índice del ítem dentro del layout.
+        layout.addWidget(self.placeholder_text, 1)
+        self.setLayout(layout)
+
+
+class MainWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Linear Regression - Main window")
+        #Stack windows------------------------------------
+        self.stacked_widget = QStackedWidget()
+        self.setup_window = SetupWindow(self.stacked_widget)
+        self.result_window = ResultWindow(self.stacked_widget)
+
+        self.stacked_widget.addWidget(self.setup_window)  # índice 0
+        self.stacked_widget.addWidget(self.result_window) # indice 1
+        #----------------------------------------------------
+        self.setup_window_button = QPushButton("Setup Window")
+        self.setup_window_button.clicked.connect(self.change_to_setup_window)
+        self.result_window_button = QPushButton("Result Window")
+        self.result_window_button.clicked.connect(self.change_to_result_window)
+        widgets = [self.setup_window_button,self.result_window_button]
+
+        def hide_widgets():
+            for widget in widgets:
+                widget.hide()
+
+        #layouts:
+
+        #top layout - main bar:
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.setup_window_button)
+        top_layout.addWidget(self.result_window_button)
+        #Container of main bar - this for the border:------------------
+        top_panel_widget = QWidget()
+        top_panel_widget.setLayout(top_layout)
+        top_panel_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        #---------------------------------------------------------------
+        main_layout = QVBoxLayout()
+        main_layout.addWidget(top_panel_widget)
+        main_layout.addWidget(self.stacked_widget)
+        self.setLayout(main_layout)
+    #Methods:
+    def change_to_setup_window(self):
+        self.stacked_widget.setCurrentIndex(0)
+    def change_to_result_window(self):
+        self.stacked_widget.setCurrentIndex(1)
+
+
 # Just a function to set the icon.jpg as the app icon and as the docker icon
 # at the moment just compatible with MacOS.
 def set_app_icon(app):
@@ -553,7 +622,7 @@ def main():
     app = QApplication(sys.argv)
     app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
     set_app_icon(app)
-    window = Window()
+    window = MainWindow()
     window.showMaximized()
     sys.exit(app.exec_())
 
