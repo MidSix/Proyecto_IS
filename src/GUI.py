@@ -16,7 +16,7 @@ from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
-    QComboBox, QSizePolicy, QStackedWidget
+    QComboBox, QSizePolicy, QStackedWidget, QTextEdit
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
 #from AppKit import NSApplication, NSImage
@@ -280,6 +280,26 @@ class SetupWindow(QWidget):
         bottom_panel_layout.addWidget(self.container_selector_widget, alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_preprocess_widget, alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_splitter_widget, alignment=Qt.AlignLeft)
+        # ----------------- container for model creation (description + button) -----------------
+        # This container remains hidden initially and will be shown after a successful split.
+        self.container_model_create_widget = QWidget()
+        model_create_layout = QVBoxLayout()
+        # Description textarea (QTextEdit for multi-line)
+        self.model_description_label2 = QLabel("Description")
+        self.model_description_textarea = QTextEdit()
+        self.model_description_textarea.setPlaceholderText("descripcion")  # placeholder per professor instruction
+        self.model_create_button = QPushButton("Create model")
+        model_create_layout.addWidget(self.model_description_label2)
+        model_create_layout.addWidget(self.model_description_textarea)
+        model_create_layout.addWidget(self.model_create_button)
+        self.container_model_create_widget.setLayout(model_create_layout)
+        # Initially hidden; will be shown after splitting_dataframe completes
+        self.container_model_create_widget.hide()
+        # Add to bottom panel layout *after* the splitter widget (alignment left to avoid stretching)
+        bottom_panel_layout.addWidget(self.container_model_create_widget, alignment=Qt.AlignLeft)
+
+        # connect create model button to handler
+        self.model_create_button.clicked.connect(self.create_model_from_ui)
 
         #set layouts on our widgets:
         self.top_panel_widget.setLayout(top_panel_layout)
