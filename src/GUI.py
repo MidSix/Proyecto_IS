@@ -709,6 +709,13 @@ class ResultWindow(QWidget):
             self.graph.deleteLater()
             self.toolbar = None
             self.graph = None
+        # Hide description when clearing results
+        try:
+            if hasattr(self, "description_display"):
+                self.description_display.clear()
+                self.description_display.hide()
+        except Exception:
+            pass
     def multiple_linear_regression(self):
         self.summary.setText(self.metrics[2])
         self.summary.show()
