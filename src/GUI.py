@@ -349,6 +349,12 @@ class SetupWindow(QWidget):
         for element in elements:
             if element.isVisible():
                 element.setVisible(False)
+        # hide the model creation container when the user changes selection
+        try:
+            self.container_model_create_widget.hide()
+        except Exception:
+            pass
+
 
     def choose_file(self):
         ruta, _ = QFileDialog.getOpenFileName(
@@ -370,8 +376,14 @@ class SetupWindow(QWidget):
             QMessageBox.information(self, "Success", "File loaded successfully.")
             self.container_preprocess_widget.hide()
             self.container_splitter_widget.hide()
+            # ensure model creation container is hidden when a new file is opened
+            try:
+                self.container_model_create_widget.hide()
+            except Exception:
+                pass
             self.show_column_selectors(df)
             self.another_file_opened.emit()
+
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"The file could not be loaded:\n{str(e)}")
