@@ -577,6 +577,7 @@ class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
     def __init__(self, stacked_widget):
         super().__init__()
+        #------------------------widgets-----------------------------------
         self.stacked_widget = stacked_widget
         self.placeholder_text = QLabel(
         "Remember that to access this feature\n"
@@ -584,11 +585,19 @@ class ResultWindow(QWidget):
         "preprocess if needed and split\n"
         "the data into training and test sets.\n"
         )
-        #------------------------widgets-----------------------------------
         self.placeholder_text.setAlignment(Qt.AlignCenter)
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
         self.summary = QLabel()
         self.summary.setAlignment(Qt.AlignCenter)
+        #Just some QSS to make the self.summary looks better.
+        self.summary.setStyleSheet("""
+                                    QLabel {
+                                    font-family: 'Consolas';
+                                    font-size: 14pt;
+                                    color: #E0E0E0;
+                                    }
+                                    """)
+
         self.summary.hide()
         self.model = LinearRegressionModel()
         self.toolbar = None
