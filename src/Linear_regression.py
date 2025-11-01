@@ -107,7 +107,7 @@ class LinearRegressionModel:
         # Intercept with explicit sign
         b0 = float(self.intercept_)
         sign = '+' if b0 >= 0 else '-'
-        self.regression_line = f"y = {' + '.join(terms)} {sign} {abs(b0):.3f}"
+        self.regression_line = f"{self.y_train.columns.tolist()[0]} = {' + '.join(terms)} {sign} {abs(b0):.3f}"
         return self.regression_line
 
     def can_plot(self):

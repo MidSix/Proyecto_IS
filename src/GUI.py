@@ -221,7 +221,7 @@ class SetupWindow(QWidget):
         self.model_widget = QWidget()
         self.model_vlayout = QVBoxLayout()
         self.model_description_edit = QTextEdit()
-        self.model_description_edit.setPlaceholderText("description")
+        self.model_description_edit.setPlaceholderText("description (optional)")
         self.create_model_button = QPushButton("create model")
         self.create_model_button.clicked.connect(self.create_model_clicked)
         self.model_vlayout.addWidget(self.model_description_edit)
@@ -603,7 +603,7 @@ class SetupWindow(QWidget):
 
         # Construir payload y emitir señal para que ResultWindow cree el modelo y (si procede) plotee
         summary = self.splitter.get_meta()
-        payload = [(self.train_df, self.test_df), summary]
+        payload = [(self.train_df, self.test_df), summary, self.model_description]
         self.train_test_df_ready.emit(payload)
 
         # Mantener la lógica de ploteo/errores: si ResultWindow notificó que no se pudo plotea
@@ -726,6 +726,18 @@ class ResultWindow(QWidget):
         #df over and over again for each method we call inside model.
         self.clear_result_window()
         self.metrics = self.model.fit_and_evaluate()
+        #---------------------------Save_models-------------------------------
+        #Here is all the neccesary attributes to save
+        self.train_r2 = self.model.metrics_train['r2']
+        self.train_mse = self.model.metrics_train['mse'] #MSE mean squared error
+        self.test_r2 = self.model.metrics_test['r2']
+        self.test_mse = self.model.metrics_test['mse']
+        self.regression_line = self.model.regression_line #This is the formula of the reggression line
+        #this are the variables of input(x) and output(y) names:
+        self.x_train = self.model.x_train.columns.tolist() #names of input columns :list[str]
+        self.y_train = self.model.y_train.columns.tolist()[0] #name of output column :list[str]
+        self.model_description = data[2] #This is the description the user wrote when creating the model
+        #---------------------------Save_models-------------------------------
         error = self.metrics[3]
         if error is not None:
             self.cant_be_plotted.emit(error)
@@ -745,7 +757,6 @@ class ResultWindow(QWidget):
         #visible in this view, ResultWindow, not in SetupWindow xd. Now works.
         if self.summary.isVisibleTo(self):
             self.summary.hide()
-
         fig = self.model.get_plot_figure()
         self.graph = FigureCanvas(fig)
         self.toolbar = NavigationToolbar(self.graph, self)
@@ -753,7 +764,6 @@ class ResultWindow(QWidget):
         self.graph_layout.addWidget(self.graph)
         self.container_graph_widget.setLayout(self.graph_layout)
         self.main_layout.addWidget(self.container_graph_widget)
-
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
