@@ -176,6 +176,7 @@ class SetupWindow(QWidget):
         self.container_selector_widget = QWidget()
         self.container_preprocess_widget = QWidget()
         self.container_splitter_widget = QWidget()
+        self.container_model_widget = QWidget()  # NEW: contenedor para descripción + botón + etiqueta resumen
 
         self.input_label = QLabel("Input columns (features)")
         self.input_selector = QListWidget()
@@ -214,8 +215,37 @@ class SetupWindow(QWidget):
         self.seed_edit = QLineEdit("42")
         self.split_button = QPushButton("Split data into training/test")
         self.split_button.clicked.connect(self.splitting_dataframe)
-        # ----------------- bottom setup - splitter -----------------
-        self.summary_split_label = QLabel()
+
+        # ----------------- NEW: contenedor de creación de modelo -----------------
+        # model_widget (vertical): descripción + botón
+        self.model_widget = QWidget()
+        self.model_vlayout = QVBoxLayout()
+        self.model_description_edit = QTextEdit()
+        self.model_description_edit.setPlaceholderText("description")
+        self.create_model_button = QPushButton("create model")
+        self.create_model_button.clicked.connect(self.create_model_clicked)
+        self.model_vlayout.addWidget(self.model_description_edit)
+        self.model_vlayout.addWidget(self.create_model_button)
+        self.model_widget.setLayout(self.model_vlayout)
+
+        # QLabel de resumen a la derecha del model_widget dentro del mismo contenedor
+        self.summary_model_creation_label = QLabel()
+        self.summary_model_creation_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        #Just some QSS to make the self.summary looks better.
+        self.summary_model_creation_label.setStyleSheet("""
+                                    QLabel {
+                                    font-family: 'Consolas';
+                                    font-size: 10pt;
+                                    color: #E0E0E0;
+                                    }
+                                    """)
+
+        # container_model_widget -> layout horizontal con model_widget a la izquierda y summary label a la derecha
+        self.container_model_layout = QHBoxLayout()
+        self.container_model_layout.addWidget(self.model_widget)
+        self.container_model_layout.addWidget(self.summary_model_creation_label)
+        self.container_model_widget.setLayout(self.container_model_layout)
+
         # ----------------- Set visibility -----------------
         widgets = [
             self.input_label, self.input_selector, self.output_label,
@@ -223,7 +253,7 @@ class SetupWindow(QWidget):
             self.strategy_box, self.apply_button, self.constant_name_edit,
             self.split_button, self.test_edit, self.seed_edit,
             self.test_edit_label, self.seed_edit_label,
-            self.summary_split_label
+            self.container_model_widget
             ]
         def hide_widgets():
             for w in widgets:
@@ -261,8 +291,6 @@ class SetupWindow(QWidget):
         splitter_col.addWidget(self.seed_edit)
         splitter_col.addWidget(self.split_button)
 
-        splitter_confirmation_col = QVBoxLayout()
-        splitter_confirmation_col.addWidget(self.summary_split_label)
         # Group the layouts into another layout but this time a horizontal one
         container_selector_layout = QHBoxLayout()
         container_selector_layout.addLayout(input_col)
@@ -270,7 +298,6 @@ class SetupWindow(QWidget):
 
         container_splitter_layout = QHBoxLayout()
         container_splitter_layout.addLayout(splitter_col)
-        container_splitter_layout.addLayout(splitter_confirmation_col)
 
         #Envolpe the layout into a widget, this is for setting maximum width
         self.container_selector_widget.setLayout(container_selector_layout)
@@ -280,26 +307,8 @@ class SetupWindow(QWidget):
         bottom_panel_layout.addWidget(self.container_selector_widget, alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_preprocess_widget, alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_splitter_widget, alignment=Qt.AlignLeft)
-        # ----------------- container for model creation (description + button) -----------------
-        # This container remains hidden initially and will be shown after a successful split.
-        self.container_model_create_widget = QWidget()
-        model_create_layout = QVBoxLayout()
-        # Description textarea (QTextEdit for multi-line)
-        self.model_description_label2 = QLabel("Description")
-        self.model_description_textarea = QTextEdit()
-        self.model_description_textarea.setPlaceholderText("descripcion")  # placeholder per professor instruction
-        self.model_create_button = QPushButton("Create model")
-        model_create_layout.addWidget(self.model_description_label2)
-        model_create_layout.addWidget(self.model_description_textarea)
-        model_create_layout.addWidget(self.model_create_button)
-        self.container_model_create_widget.setLayout(model_create_layout)
-        # Initially hidden; will be shown after splitting_dataframe completes
-        self.container_model_create_widget.hide()
-        # Add to bottom panel layout *after* the splitter widget (alignment left to avoid stretching)
-        bottom_panel_layout.addWidget(self.container_model_create_widget, alignment=Qt.AlignLeft)
-
-        # connect create model button to handler
-        self.model_create_button.clicked.connect(self.create_model_from_ui)
+        # IMPORTANTE: añadir el contenedor del modelo justo DESPUÉS del contenedor del splitter
+        bottom_panel_layout.addWidget(self.container_model_widget, alignment=Qt.AlignLeft)
 
         #set layouts on our widgets:
         self.top_panel_widget.setLayout(top_panel_layout)
@@ -342,19 +351,17 @@ class SetupWindow(QWidget):
         self.current_df = None
         self.selected_inputs = []
         self.selected_output = None
+        self.model_description = ""
+        self.was_succesfully_plotted = True
 
     # ------------------- Methods ------------------------------------------------
     def selected_item_changed(self, text):
+        # Si el usuario cambia selección, ocultar el contenedor de creación de modelo
+        self.container_model_widget.hide()
         elements = [self.container_preprocess_widget, self.container_splitter_widget]
         for element in elements:
             if element.isVisible():
                 element.setVisible(False)
-        # hide the model creation container when the user changes selection
-        try:
-            self.container_model_create_widget.hide()
-        except Exception:
-            pass
-
 
     def choose_file(self):
         ruta, _ = QFileDialog.getOpenFileName(
@@ -374,16 +381,12 @@ class SetupWindow(QWidget):
 
             self.load_table(df)
             QMessageBox.information(self, "Success", "File loaded successfully.")
+            # Ocultar contenedores al abrir nuevo archivo
             self.container_preprocess_widget.hide()
             self.container_splitter_widget.hide()
-            # ensure model creation container is hidden when a new file is opened
-            try:
-                self.container_model_create_widget.hide()
-            except Exception:
-                pass
+            self.container_model_widget.hide()
             self.show_column_selectors(df)
             self.another_file_opened.emit()
-
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"The file could not be loaded:\n{str(e)}")
@@ -459,8 +462,6 @@ class SetupWindow(QWidget):
             if not model.set_highlight_by_missing(cols):
                 self.container_preprocess_widget.setVisible(False)
                 self.container_splitter_widget.setVisible(True)
-                if self.summary_split_label.isVisible():
-                    self.summary_split_label.setVisible(False)
             else:
                 self.container_splitter_widget.setVisible(False)
                 self.container_preprocess_widget.setVisible(True)
@@ -530,7 +531,6 @@ class SetupWindow(QWidget):
 
             # Show split button after successful preprocessing
             self.container_preprocess_widget.hide()
-            self.summary_split_label.clear()
             self.container_splitter_widget.show()
 
         except Exception as e:
@@ -542,7 +542,7 @@ class SetupWindow(QWidget):
         #this attribute self.was_succesfully_plotted. This is for showing or not
         #the message saying the plot was succesfull.
         self.was_succesfully_plotted = True
-        widgets = [self.summary_split_label]
+        self.model_description_edit.clear()  # Clear description to avoid keeping old model text
         model = self.table.model()
         cols = [self.selected_output] + self.selected_inputs #This order is used
         #to select x_train/test and y_train/test. self.selected_output can only
@@ -559,47 +559,20 @@ class SetupWindow(QWidget):
 
         self.train_df, self.test_df = self.splitter.split(self.current_df[cols], test_size, seed)
 
-        # compute and store summary but DO NOT emit payload here.
         summary = self.splitter.get_meta()
-        # Save latest summary as attribute so other methods can access it
-        try:
-            self.latest_summary = dict(summary) if isinstance(summary, dict) else summary
-        except Exception:
-            self.latest_summary = summary
-
-        # Show/create model container so user can enter description and finally create/persist the model
-        # The actual creation (payload emission) is performed by the dedicated button connected to create_model_from_ui.
-        try:
-            self.container_model_create_widget.show()
-        except Exception:
-            pass
-
-
-        if self.was_succesfully_plotted:
-            msg_summary = (
-            f"Total df: {summary["n_rows_total"]} rows\n"
+        # Mostrar mensaje de Split exitoso con summary
+        msg_summary = (
+            f"Total df: {summary['n_rows_total']} rows\n"
             f"Training df: {summary['n_train']} rows\n"
             f"Test df: {summary['n_test']} rows\n"
             f"Seed used: {summary['random_seed']}"
-            )
+        )
+        QMessageBox.information(self, "Split successful", msg_summary)
 
-            if len(self.selected_inputs) > 1:
-                QMessageBox.information(self,"succesfull", "multiple regression succesfully done\n\n"
-                "can't be plotted\n\n"
-                f"{msg_summary}")
-                self.summary_split_label.setText("multiple regression succesfully done\n"
-                "can't be plotted\n\n" + msg_summary)
-            else:
-                QMessageBox.information(self,"succesfull", "Simple regression succesfully done\n\n"
-                "plotted on Result Window\n\n"
-                f"{msg_summary}")
-                self.summary_split_label.setText("Simple regression succesfully done\n"
-                "plotted on Result Window\n\n" + msg_summary)
-        else:
-            QMessageBox.warning(self,"Failure", str(self.plotted_error))
-        for w in widgets:
-            w.setVisible(True)
-
+        # Preparar interfaz para la creación del modelo
+        self.summary_model_creation_label.clear()
+        self.container_model_widget.show()
+        self.model_widget.show()
 
     def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
@@ -609,55 +582,60 @@ class SetupWindow(QWidget):
         else:
             self.constant_name_edit.clear()
         return None
-    # ----------------- New method: handle creation of model when user clicks the Create button
-    def create_model_from_ui(self):
-        """Called when user presses the 'Create model' button. This will take the text from the textarea,
-        attach it to the summary and emit the train_test_df_ready signal (previously done inside splitting_dataframe).
-        """
-        # Grab description from the textarea (optional)
-        try:
-            description = self.model_description_textarea.toPlainText().strip()
-        except Exception:
-            # fallback in case the textarea was not created for some reason
-            description = getattr(self, 'model_description', '') if hasattr(self, 'model_description') else ''
-
-        if not description:
-            QMessageBox.information(self, "Info", "No model description was added. The model will be created without a description.")
-        else:
-            QMessageBox.information(self, "Info", "Model description captured and will be attached to the model.")
-
-        # get summary (fresh) if possible, otherwise use stored latest_summary
-        try:
-            summary = self.splitter.get_meta()
-        except Exception:
-            summary = getattr(self, 'latest_summary', {}) if hasattr(self, 'latest_summary') else {}
-
-        # ensure it's a dict and attach description
-        try:
-            summary = dict(summary) if isinstance(summary, dict) else {}
-        except Exception:
-            summary = {}
-        summary['model_description'] = description
-
-        # prepare payload and emit the signal to create the model / plot
-        payload = [(getattr(self, 'train_df', None), getattr(self, 'test_df', None)), summary]
-        self.train_test_df_ready.emit(payload)
-
-        # hide the creation container after pressing create
-        try:
-            self.container_model_create_widget.hide()
-        except Exception:
-            pass
-
-        # store description as attribute (ready for future persistence)
-        self.model_description = description
-
 
 #-------------------------Connections:--------------------------------------
     @pyqtSlot(object)
     def cant_be_plotted(self, res):
         self.was_succesfully_plotted = False
         self.plotted_error = res
+
+    # ----------------- NEW: creación de modelo -----------------
+    def create_model_clicked(self):
+        # Guardar descripción escrita por el usuario como atributo
+        self.model_description = self.model_description_edit.toPlainText()
+        if not self.model_description.strip():
+            # Avisar pero continuar con la creación del modelo
+            QMessageBox.information(self, "Info", "No model description was added.\n"
+            "The model will be created without a description.")
+        else:
+            QMessageBox.information(self, "Info", "Model description captured.\n"
+            "It will be attached to the model.")
+
+        # Construir payload y emitir señal para que ResultWindow cree el modelo y (si procede) plotee
+        summary = self.splitter.get_meta()
+        payload = [(self.train_df, self.test_df), summary]
+        self.train_test_df_ready.emit(payload)
+
+        # Mantener la lógica de ploteo/errores: si ResultWindow notificó que no se pudo plotea
+        if not self.was_succesfully_plotted:
+            QMessageBox.warning(self, "Failure", str(self.plotted_error))
+            return  # No mostrar summary_model_creation_label si hubo fallo
+
+        # Notificaciones de éxito (las que antes estaban tras el Split)
+        if len(self.selected_inputs) > 1:
+            QMessageBox.information(self, "Successful", "multiple regression succesfully done\n\ncan't be plotted\n\n" +
+                                    f"Total df: {summary['n_rows_total']} rows\n"
+                                    f"Training df: {summary['n_train']} rows\n"
+                                    f"Test df: {summary['n_test']} rows\n"
+                                    f"Seed used: {summary['random_seed']}")
+            self.summary_model_creation_label.setText("multiple regression succesfully done\ncan't be plotted\n\n"
+                                                      f"Total df: {summary['n_rows_total']} rows\n"
+                                                      f"Training df: {summary['n_train']} rows\n"
+                                                      f"Test df: {summary['n_test']} rows\n"
+                                                      f"Seed used: {summary['random_seed']}")
+        else:
+            QMessageBox.information(self, "Successful", "Simple regression succesfully done\n\nplotted on Result Window\n\n" +
+                                    f"Total df: {summary['n_rows_total']} rows\n"
+                                    f"Training df: {summary['n_train']} rows\n"
+                                    f"Test df: {summary['n_test']} rows\n"
+                                    f"Seed used: {summary['random_seed']}")
+            self.summary_model_creation_label.setText("Simple regression succesfully done\nplotted on Result Window\n\n"
+                                                      f"Total df: {summary['n_rows_total']} rows\n"
+                                                      f"Training df: {summary['n_train']} rows\n"
+                                                      f"Test df: {summary['n_test']} rows\n"
+                                                      f"Seed used: {summary['random_seed']}")
+        self.model_widget.hide()
+        self.summary_model_creation_label.show()
 
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
@@ -709,13 +687,6 @@ class ResultWindow(QWidget):
             self.graph.deleteLater()
             self.toolbar = None
             self.graph = None
-        # Hide description when clearing results
-        try:
-            if hasattr(self, "description_display"):
-                self.description_display.clear()
-                self.description_display.hide()
-        except Exception:
-            pass
     def multiple_linear_regression(self):
         self.summary.setText(self.metrics[2])
         self.summary.show()
@@ -724,6 +695,7 @@ class ResultWindow(QWidget):
     @pyqtSlot(object)
     def another_file_opened(self):
         self.clear_result_window()
+        self.summary.hide()
         self.placeholder_text.show()
     @pyqtSlot(object)
     def train_test_df_res(self, data:list):
