@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.datasets import fetch_california_housing#this dataset is for testing purposes only
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-
+from typing import Optional
 #This model is to be highly integrated with the gui.
 #I don't think I need to add memorization or saving/loading capabilities here,
 #so this will simply be a model object that the gui can interact with to create and evaluate linear regression models.
@@ -92,7 +92,7 @@ class LinearRegressionModel:
                         f'R2  : {self.metrics_test['r2']}')
         return self.metrics_train, self.metrics_test, self.summary, None
 
-    def formula_string(self):  # DOD requests formula representation
+    def formula_string(self) -> str:  # DOD requests formula representation
         if not self.initialized:
             return "Model not initialized"
         terms = []
@@ -191,14 +191,49 @@ class LinearRegressionModel:
     def get_R2(self): #This two are to be called by gui after evaluation, to show results
         if self.initialized:
             return self.metrics_test['r2']#DOD requests test metrics only
-        return 9999 #arbitrary high value to indicate uninitialized model, like if u get this you know something's wrong
+        return "NO DATA" #If not initialized
 
     @property
     def get_MSE(self):
+        """Returns MSE on test data or high value if uninitialized"""
         if self.initialized:
             return self.metrics_test['mse']#DOD requests test metrics only
-        return 9999 #arbitrary high value to indicate uninitialized model, like if u get this you know something's wrong
+        return "NO DATA" #If not initialized
+
+    @property
+    def metrics(self):
+        """Returns all metrics in a clear format"""
+        if not self.initialized:
+            return "NO DATA"
+        return {
+            'train': self.metrics_train,
+            'test': self.metrics_test
+        }
 
 
 if __name__ == "__main__":
-    print("Don't executes this as a main module")
+    Ans=input("Run a test example of LinearRegressionModel? (y/n): ")
+    if Ans.lower() == "y":
+        from sklearn.model_selection import train_test_split
+
+        model = LinearRegressionModel()
+        example_data = fetch_california_housing(as_frame=True)
+        columns=['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude']
+        feature=input(f"Select feature from {columns}(0-{len(columns)-1}): ")
+        while not feature in [str(i) for i in range(len(columns))]:
+            feature=input(f"Invalid selection. Select feature from {columns}(0-{len(columns)-1}): ")
+        X = example_data.data[[columns[int(feature)]]]  # Using only one feature
+        y = example_data.target
+
+        # Split the data into train and test sets
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
+        )
+        model.x_train, model.x_test, model.y_train, model.y_test = X_train, X_test, y_train, y_test
+        model.fit_and_evaluate()
+        print("Formula:", model.formula_string())
+        print("Metrics:", model.metrics)
+        plt = model.get_plot_item()
+        plt.show()
+    else:
+        print("Ok, no test for you then.")

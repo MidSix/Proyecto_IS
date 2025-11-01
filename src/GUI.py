@@ -5,7 +5,7 @@ import pandas as pd
 import qdarkstyle
 import numpy as np
 from data_module import *
-from linear_regression import *
+from Linear_regression import *
 from data_split import *
 
 from matplotlib.backends.backend_qt5agg import (
