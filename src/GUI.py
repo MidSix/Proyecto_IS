@@ -609,6 +609,49 @@ class SetupWindow(QWidget):
         else:
             self.constant_name_edit.clear()
         return None
+    # ----------------- New method: handle creation of model when user clicks the Create button
+    def create_model_from_ui(self):
+        """Called when user presses the 'Create model' button. This will take the text from the textarea,
+        attach it to the summary and emit the train_test_df_ready signal (previously done inside splitting_dataframe).
+        """
+        # Grab description from the textarea (optional)
+        try:
+            description = self.model_description_textarea.toPlainText().strip()
+        except Exception:
+            # fallback in case the textarea was not created for some reason
+            description = getattr(self, 'model_description', '') if hasattr(self, 'model_description') else ''
+
+        if not description:
+            QMessageBox.information(self, "Info", "No model description was added. The model will be created without a description.")
+        else:
+            QMessageBox.information(self, "Info", "Model description captured and will be attached to the model.")
+
+        # get summary (fresh) if possible, otherwise use stored latest_summary
+        try:
+            summary = self.splitter.get_meta()
+        except Exception:
+            summary = getattr(self, 'latest_summary', {}) if hasattr(self, 'latest_summary') else {}
+
+        # ensure it's a dict and attach description
+        try:
+            summary = dict(summary) if isinstance(summary, dict) else {}
+        except Exception:
+            summary = {}
+        summary['model_description'] = description
+
+        # prepare payload and emit the signal to create the model / plot
+        payload = [(getattr(self, 'train_df', None), getattr(self, 'test_df', None)), summary]
+        self.train_test_df_ready.emit(payload)
+
+        # hide the creation container after pressing create
+        try:
+            self.container_model_create_widget.hide()
+        except Exception:
+            pass
+
+        # store description as attribute (ready for future persistence)
+        self.model_description = description
+
 
 #-------------------------Connections:--------------------------------------
     @pyqtSlot(object)
