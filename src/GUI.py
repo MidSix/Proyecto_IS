@@ -559,10 +559,21 @@ class SetupWindow(QWidget):
 
         self.train_df, self.test_df = self.splitter.split(self.current_df[cols], test_size, seed)
 
+        # compute and store summary but DO NOT emit payload here.
         summary = self.splitter.get_meta()
-        # Mensaje
-        payload = [(self.train_df,self.test_df),summary]
-        self.train_test_df_ready.emit(payload)
+        # Save latest summary as attribute so other methods can access it
+        try:
+            self.latest_summary = dict(summary) if isinstance(summary, dict) else summary
+        except Exception:
+            self.latest_summary = summary
+
+        # Show/create model container so user can enter description and finally create/persist the model
+        # The actual creation (payload emission) is performed by the dedicated button connected to create_model_from_ui.
+        try:
+            self.container_model_create_widget.show()
+        except Exception:
+            pass
+
 
         if self.was_succesfully_plotted:
             msg_summary = (
