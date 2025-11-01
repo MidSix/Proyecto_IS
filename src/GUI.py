@@ -3,16 +3,22 @@ import sys
 import os
 import pandas as pd
 import qdarkstyle
+import numpy as np
 from data_module import *
+from linear_regression import *
+from data_split import *
 
-from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant
+from matplotlib.backends.backend_qt5agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QT as NavigationToolbar
+)
+from PyQt5.QtCore import Qt, QAbstractTableModel, QVariant, pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout, QFileDialog,
     QTableView, QMessageBox, QHeaderView, QListWidget, QAbstractItemView, QHBoxLayout,
     QComboBox, QSizePolicy, QStackedWidget
 )
 from PyQt5.QtGui import QIcon, QBrush, QColor
-from data_split import DataSplitter,DataSplitError
 #from AppKit import NSApplication, NSImage
 
 #All persistense .py files(stored in the computer) have a global
@@ -136,6 +142,9 @@ class PandasModel(QAbstractTableModel):
 # Main Window - controler in the MVC design pattern
 # manages the interaction between user(view) and data(model).
 class SetupWindow(QWidget):
+    #Signals to communicate with ResultWindow
+    train_test_df_ready = pyqtSignal(object)
+    another_file_opened = pyqtSignal()
     def __init__(self, stacked_widget):
         super().__init__()
         self.setWindowTitle("Linear Regression - Setup")
@@ -342,6 +351,7 @@ class SetupWindow(QWidget):
             self.container_preprocess_widget.hide()
             self.container_splitter_widget.hide()
             self.show_column_selectors(df)
+            self.another_file_opened.emit()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"The file could not be loaded:\n{str(e)}")
@@ -488,16 +498,24 @@ class SetupWindow(QWidget):
 
             # Show split button after successful preprocessing
             self.container_preprocess_widget.hide()
+            self.summary_split_label.clear()
             self.container_splitter_widget.show()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Error during preprocessing:\n{str(e)}")
 
     # ----------------- TRAIN/TEST -----------------
-    def splitting_dataframe(self):
+    def splitting_dataframe(self) -> tuple:
+        #We assume it's True, if not ResultWindow emit a signal to change
+        #this attribute self.was_succesfully_plotted. This is for showing or not
+        #the message saying the plot was succesfull.
+        self.was_succesfully_plotted = True
         widgets = [self.summary_split_label]
         model = self.table.model()
-        cols = self.selected_inputs + [self.selected_output]
+        cols = [self.selected_output] + self.selected_inputs #This order is used
+        #to select x_train/test and y_train/test. self.selected_output can only
+        #be one, so if we index 0 we are getting y_train/test and the rammaining
+        #is x_train/test.
         if self.current_df is None or self.current_df.empty:
             QMessageBox.warning(self, "Error", "There isn't any data avaliable to split.")
             return
@@ -506,22 +524,39 @@ class SetupWindow(QWidget):
             return
         test_size = float(self.test_edit.text())
         seed = int(self.seed_edit.text())
+
         self.train_df, self.test_df = self.splitter.split(self.current_df[cols], test_size, seed)
+
         summary = self.splitter.get_meta()
         # Mensaje
-        msg_summary = (
-        "Division was correctly done.\n\n"
-        f"Total df: {summary["n_rows_total"]} rows\n"
-        f"Training df: {summary['n_train']} rows\n"
-        f"Test df: {summary['n_test']} rows\n"
-        f"Seed used: {summary['random_seed']}"
-        )
-        print(msg_summary)
-        QMessageBox.information(self,"succesful",msg_summary)
+        payload = [(self.train_df,self.test_df),summary]
+        self.train_test_df_ready.emit(payload)
 
-        self.summary_split_label.setText(msg_summary)
+        if self.was_succesfully_plotted:
+            msg_summary = (
+            f"Total df: {summary["n_rows_total"]} rows\n"
+            f"Training df: {summary['n_train']} rows\n"
+            f"Test df: {summary['n_test']} rows\n"
+            f"Seed used: {summary['random_seed']}"
+            )
+
+            if len(self.selected_inputs) > 1:
+                QMessageBox.information(self,"succesfull", "multiple regression succesfully done\n\n"
+                "can't be plotted\n\n"
+                f"{msg_summary}")
+                self.summary_split_label.setText("multiple regression succesfully done\n"
+                "can't be plotted\n\n" + msg_summary)
+            else:
+                QMessageBox.information(self,"succesfull", "Simple regression succesfully done\n\n"
+                "plotted on Result Window\n\n"
+                f"{msg_summary}")
+                self.summary_split_label.setText("Simple regression succesfully done\n"
+                "plotted on Result Window\n\n" + msg_summary)
+        else:
+            QMessageBox.warning(self,"Failure", str(self.plotted_error))
         for w in widgets:
             w.setVisible(True)
+
 
     def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
@@ -532,10 +567,14 @@ class SetupWindow(QWidget):
             self.constant_name_edit.clear()
         return None
 
-    def go_to_result_window(self):
-        self.stacked_widget.setCurrentIndex(1)  # cambia a la segunda ventana
+#-------------------------Connections:--------------------------------------
+    @pyqtSlot(object)
+    def cant_be_plotted(self, res):
+        self.was_succesfully_plotted = False
+        self.plotted_error = res
 
 class ResultWindow(QWidget):
+    cant_be_plotted = pyqtSignal(object)
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
@@ -545,16 +584,101 @@ class ResultWindow(QWidget):
         "preprocess if needed and split\n"
         "the data into training and test sets.\n"
         )
-
+        #------------------------widgets-----------------------------------
         self.placeholder_text.setAlignment(Qt.AlignCenter)
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
-
-        layout = QVBoxLayout()
+        self.summary = QLabel()
+        self.summary.setAlignment(Qt.AlignCenter)
+        self.summary.hide()
+        self.model = LinearRegressionModel()
+        self.toolbar = None
+        self.graph = None
+        self.container_graph_widget = QWidget()
+        #-----------------------------graph - layout--------------------------
+        self.graph_layout = QVBoxLayout()
+        self.main_layout = QVBoxLayout()
         #Con layout.addWidget(widget, stretch) le asignas el factor de stretch al añadir el widget.
         #Con layout.setStretch(indice, stretch) ajustas el factor de stretch después, refiriéndote al índice del ítem dentro del layout.
-        layout.addWidget(self.placeholder_text, 1)
-        self.setLayout(layout)
+        self.main_layout.addWidget(self.placeholder_text, 1)
+        self.main_layout.addWidget(self.summary, 1)
+        self.setLayout(self.main_layout)
+    #Methods:
+    def clear_result_window(self):
+        if hasattr(self, "graph") and self.graph is not None:
+            try:
+                self.container_graph_widget.removeWidget(self.toolbar)
+                self.container_graph_widget.removeWidget(self.graph)
+            except Exception:
+                pass
+            self.toolbar.deleteLater()
+            self.graph.deleteLater()
+            self.toolbar = None
+            self.graph = None
+    def multiple_linear_regression(self):
+        self.summary.setText(self.metrics[2])
+        self.summary.show()
 
+    #---------------------------Connections-------------------------------
+    @pyqtSlot(object)
+    def another_file_opened(self):
+        self.clear_result_window()
+        self.placeholder_text.show()
+    @pyqtSlot(object)
+    def train_test_df_res(self, data:list):
+        #IMPORTANT to understand, trust me, worth to undertand.
+        #So we ran our own event from class SetupWindow. That event is sent to
+        #MainWindow alongside the data obtained from method 'splitting_dataframe'of SetupWindow
+        #(So the event is activated when we succesfully split the data and called inside that method)
+        #MainWindow works as intermediary and connects the event received
+        #with a method that calls this class ResultWindow and then its method
+        #train_test_df_res, the one we are now.
+        #So the argument data have all we get from splitting method of SetupWindow.
+        #Well this was not that easy.
+        #data[tuple,dict]. tuple: (train_df,test_df). Inside those:
+        #train_df : first column is the output column, the target.
+        #The other columns are the input/features. So just take the first
+        #element from train_df and you have the output, then take the rest
+        #columns and have the input.
+        #test_df: same logic.
+        #dict: some summary of the operation to show it on screen maybe:
+        #{'n_rows_total': 20640, 'n_train': 16512, 'n_test': 4128, 'test_size': 0.2, 'random_seed': 42, 'shuffle': True}
+        #that's an example of an output the dict had.
+
+        self.train_df = data[0][0]
+        self.test_df  = data[0][1]
+        self.model.set_df(self.train_df, self.test_df) #This extract
+        #input-output columns from train,test df and store it in attributes
+        #inside linear_regression module. This help us to not pass this same
+        #df over and over again for each method we call inside model.
+        self.clear_result_window()
+        self.metrics = self.model.fit_and_evaluate()
+        error = self.metrics[3]
+        if error is not None:
+            self.cant_be_plotted.emit(error)
+            return
+        self.placeholder_text.hide() #self explanatory xd
+        if len(np.ravel(self.model.coef_)) != 1:
+            self.multiple_linear_regression()
+            return
+        #This was confusing. isVisible() returns True if the widget is
+        #visible in the actual view, not in stacked ones. So obviusly
+        #summary widget is not visible from
+        #SetupWindow(which is where we pressed the split button that leads here)
+        #but ResultWindow. so self.summary.isVisible() always returned false because
+        #self.summary it's not even a wiget from SetupWindow, not visible from there.
+        #so the solution is to check if its visible in an specific view, not
+        #necessarily the actual one. So we passed self which is checking if it's
+        #visible in this view, ResultWindow, not in SetupWindow xd. Now works.
+        if self.summary.isVisibleTo(self):
+            self.summary.hide()
+
+        fig = self.model.get_plot_figure()
+        self.graph = FigureCanvas(fig)
+        self.toolbar = NavigationToolbar(self.graph, self)
+        self.graph_layout.addWidget(self.toolbar)
+        self.graph_layout.addWidget(self.graph)
+        self.container_graph_widget.setLayout(self.graph_layout)
+        self.main_layout.addWidget(self.container_graph_widget)
 
 class MainWindow(QWidget):
     def __init__(self):
@@ -568,6 +692,11 @@ class MainWindow(QWidget):
         self.stacked_widget.addWidget(self.setup_window)  # índice 0
         self.stacked_widget.addWidget(self.result_window) # indice 1
         #----------------------------------------------------
+        #------------------Conections-----------------------
+        self.setup_window.another_file_opened.connect(self.another_file_opened)
+        self.setup_window.train_test_df_ready.connect(self.train_test_df_ready)
+        self.result_window.cant_be_plotted.connect(self.cant_be_plotted)
+        #---------------------------------------------------
         self.setup_window_button = QPushButton("Setup Window")
         self.setup_window_button.clicked.connect(self.change_to_setup_window)
         self.result_window_button = QPushButton("Result Window")
@@ -598,6 +727,20 @@ class MainWindow(QWidget):
         self.stacked_widget.setCurrentIndex(0)
     def change_to_result_window(self):
         self.stacked_widget.setCurrentIndex(1)
+
+    #MainWindow as the orchestrator, the one which handle the communication
+    #between these two classes.
+    @pyqtSlot()
+    def another_file_opened(self):
+        self.result_window.another_file_opened()
+
+    @pyqtSlot(object)
+    def train_test_df_ready(self, res):
+        self.result_window.train_test_df_res(res)
+
+    @pyqtSlot(object)
+    def cant_be_plotted(self, res):
+        self.setup_window.cant_be_plotted(res)
 
 
 # Just a function to set the icon.jpg as the app icon and as the docker icon
