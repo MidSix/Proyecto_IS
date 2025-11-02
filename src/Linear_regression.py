@@ -85,11 +85,11 @@ class LinearRegressionModel:
         self.formula_string()
         self.summary = (f'Regression Line:\n {self.regression_line}\n\n'
                         'Train metrics:\n'
-                        f'MSE : {self.metrics_train['mse']}\n'
-                        f'R2  : {self.metrics_train['r2']}\n\n'
+                        f'MSE : {self.metrics_train["mse"]}\n'
+                        f'R2  : {self.metrics_train["r2"]}\n\n'
                         'Test metrics\n'
-                        f'MSE : {self.metrics_test['mse']}\n'
-                        f'R2  : {self.metrics_test['r2']}')
+                        f'MSE : {self.metrics_test["mse"]}\n'
+                        f'R2  : {self.metrics_test["r2"]}')
         return self.metrics_train, self.metrics_test, self.summary, None
 
     def formula_string(self) -> str:  # DOD requests formula representation
