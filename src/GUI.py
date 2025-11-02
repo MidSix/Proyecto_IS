@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+import joblib
 import pandas as pd
 import qdarkstyle
 import numpy as np
@@ -636,6 +637,57 @@ class SetupWindow(QWidget):
                                                       f"Seed used: {summary['random_seed']}")
         self.model_widget.hide()
         self.summary_model_creation_label.show()
+
+        # -------------------- GUARDAR MODELO --------------------
+    def save_model_dialog(self):
+        """
+        Open a dialog to save the trained model along with its description and metrics.
+        The model is saved in format .joblib.
+        """
+        try:
+            if not hasattr(self, "model") or self.model is None:
+                QMessageBox.warning(self, "Error", "No hay ningún modelo creado todavía.")
+                return
+
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save Model",
+                "",
+                "Files of model (*.joblib)"
+            )
+
+            if not file_path:
+                return
+
+            if not file_path.endswith(".joblib"):
+                file_path += ".joblib"
+
+            model_data = {
+                "model": self.model,
+                "train_r2": self.train_r2,
+                "train_mse": self.train_mse,
+                "test_r2": self.test_r2,
+                "test_mse": self.test_mse,
+                "regression_line": self.regression_line,
+                "x_train": self.x_train,
+                "y_train": self.y_train,
+                "model_description": self.model_description,
+            }
+
+            joblib.dump(model_data, file_path)
+
+            QMessageBox.information(
+                self,
+                "Éxito",
+                f"El modelo se ha guardado correctamente en:\n{file_path}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error al guardar",
+                f"Ocurrió un error al guardar el modelo:\n{str(e)}"
+            )
 
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
