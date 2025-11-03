@@ -638,57 +638,6 @@ class SetupWindow(QWidget):
         self.model_widget.hide()
         self.summary_model_creation_label.show()
 
-        # -------------------- GUARDAR MODELO --------------------
-    def save_model_dialog(self):
-        """
-        Open a dialog to save the trained model along with its description and metrics.
-        The model is saved in format .joblib.
-        """
-        try:
-            if not hasattr(self, "model") or self.model is None:
-                QMessageBox.warning(self, "Error", "No hay ningún modelo creado todavía.")
-                return
-
-            file_path, _ = QFileDialog.getSaveFileName(
-                self,
-                "Save Model",
-                "",
-                "Files of model (*.joblib)"
-            )
-
-            if not file_path:
-                return
-
-            if not file_path.endswith(".joblib"):
-                file_path += ".joblib"
-
-            model_data = {
-                "model": self.model,
-                "train_r2": self.train_r2,
-                "train_mse": self.train_mse,
-                "test_r2": self.test_r2,
-                "test_mse": self.test_mse,
-                "regression_line": self.regression_line,
-                "x_train": self.x_train,
-                "y_train": self.y_train,
-                "model_description": self.model_description,
-            }
-
-            joblib.dump(model_data, file_path)
-
-            QMessageBox.information(
-                self,
-                "Éxito",
-                f"El modelo se ha guardado correctamente en:\n{file_path}"
-            )
-
-        except Exception as e:
-            QMessageBox.critical(
-                self,
-                "Error al guardar",
-                f"Ocurrió un error al guardar el modelo:\n{str(e)}"
-            )
-
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
     def __init__(self, stacked_widget):
@@ -719,6 +668,7 @@ class ResultWindow(QWidget):
         self.toolbar = None
         self.graph = None
         self.container_graph_widget = QWidget()
+
         #-----------------------------graph - layout--------------------------
         self.graph_layout = QVBoxLayout()
         self.main_layout = QVBoxLayout()
@@ -727,6 +677,13 @@ class ResultWindow(QWidget):
         self.main_layout.addWidget(self.placeholder_text, 1)
         self.main_layout.addWidget(self.summary, 1)
         self.setLayout(self.main_layout)
+
+        # Button to save the model
+        self.save_button = QPushButton("Save model")
+        self.save_button.clicked.connect(self.save_model_dialog)
+        self.save_button.setVisible(False)
+        self.main_layout.addWidget(self.save_button)
+
     #Methods:
     def clear_result_window(self):
         if hasattr(self, "graph") and self.graph is not None:
@@ -816,6 +773,59 @@ class ResultWindow(QWidget):
         self.graph_layout.addWidget(self.graph)
         self.container_graph_widget.setLayout(self.graph_layout)
         self.main_layout.addWidget(self.container_graph_widget)
+        self.save_button.setVisible(True)
+
+    def save_model_dialog(self):
+        """
+        It allows you to save the trained model along with its essential information.
+        Data and graphics are excluded.
+        """
+        try:
+            # We verify that a model has been trained
+            if not hasattr(self, "train_r2"):
+                QMessageBox.warning(self, "Mistake", "There is no trained model to save.")
+                return
+
+            # Dialogue to choose a route
+            file_path, _ = QFileDialog.getSaveFileName(
+                self,
+                "Save model",
+                "",
+                "Models (*.joblib)"
+            )
+
+            if not file_path:
+                return
+            if not file_path.endswith(".joblib"):
+                file_path += ".joblib"
+
+            # Structure to be saved
+            model_data = {
+                "formula": self.regression_line,
+                "input_columns": self.x_train,
+                "output_column": self.y_train,
+                "metrics": {
+                    "train": {"R2": self.train_r2, "MSE": self.train_mse},
+                    "test": {"R2": self.test_r2, "MSE": self.test_mse},
+                },
+                "description": self.model_description,
+            }
+
+            joblib.dump(model_data, file_path)
+
+            QMessageBox.information(
+                self,
+                "Success",
+                f"The model has been saved successfully in:\n{file_path}"
+            )
+
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "Error saving",
+                f"An error occurred while saving the model:\n{str(e)}"
+            )
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
