@@ -591,6 +591,34 @@ class SetupWindow(QWidget):
                                     f"{msg_summary}")
         self.container_summary_model.show()
 
+    def on_model_loaded(self, model_data: dict):
+        """
+        Ajusta la UI cuando se carga un modelo previamente guardado:
+        - Oculta controles de carga/dataset/selección.
+        - Muestra un pequeño resumen en el contenedor de summary (opcional).
+        """
+        # Ocultar controles relacionados con carga/dataset
+        try:
+            # Oculta botones y entradas para cargar dataset/selección
+            self.btn_open_file.setVisible(False)
+            self.path_display.setVisible(False)
+            self.table.setVisible(False)
+            self.container_selector_widget.setVisible(False)
+            self.container_preprocess_widget.setVisible(False)
+            self.container_splitter_widget.setVisible(False)
+            
+            self.label.setVisible(False)
+            self.container_summary_model.setVisible(False)
+            self.summary_model_creation_label.clear()
+
+            # Guardar info mínima por si se necesita
+            self.selected_inputs = model_data.get("input_columns", [])
+            self.selected_output = model_data.get("output_column", None)
+            self.model_description = model_data.get("description", "")
+        except Exception as e:
+            QMessageBox.warning(self, "UI update", f"Model loaded but failed to update some controls:\n{str(e)}")
+
+
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
     def __init__(self, stacked_widget):
@@ -674,6 +702,53 @@ class ResultWindow(QWidget):
                 self.parity_graph = None
         except Exception:
                 pass
+        
+    def load_model_data(self, model_data: dict):
+        """
+        Recibe el diccionario guardado (joblib) y actualiza ResultWindow:
+        - Muestra fórmula y métricas en self.summary
+        - Rellena la descripción en model_description_edit
+        - Oculta placeholder y muestra contenedores de modelo (sin gráficas)
+        """
+        try:
+            # Limpia cualquier figura previa
+            self.clear_result_window()
+
+            formula = model_data.get("formula", "")
+            input_cols = model_data.get("input_columns", [])
+            output_col = model_data.get("output_column", "")
+            metrics = model_data.get("metrics", {})
+            description = model_data.get("description", "")
+
+            # Construir texto de resumen atractivo
+            train_metrics = metrics.get("train", {})
+            test_metrics = metrics.get("test", {})
+
+            summary_lines = [
+                f"Formula: {formula}",
+                f"Inputs: {', '.join(input_cols)}",
+                f"Output: {output_col}",
+                "",
+                "Train metrics:",
+                f"  R2: {train_metrics.get('R2', 'N/A')}, MSE: {train_metrics.get('MSE', 'N/A')}",
+                "",
+                "Test metrics:",
+                f"  R2: {test_metrics.get('R2', 'N/A')}, MSE: {test_metrics.get('MSE', 'N/A')}",
+            ]
+            self.summary.setText("\n".join(summary_lines))
+
+            # Poner la descripción si existe
+            self.model_description_edit.setPlainText(description or "")
+
+            # Mostrar contenedores adecuados
+            self.placeholder_text.hide()
+            self.show_all_containers(True)
+            self.main_container.show()
+
+            # No intentamos mostrar gráficos porque el model_data guardado no incluye el objeto sklearn
+            # Si quisieras re-crear gráficas necesitarías guardar coeficientes y reconstruir el plotting.
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Failed to show loaded model:\n{str(e)}")
 
     def multiple_linear_regression(self):
         self.clear_result_window()
@@ -860,7 +935,9 @@ class MainWindow(QWidget):
         self.setup_window_button.clicked.connect(self.change_to_setup_window)
         self.result_window_button = QPushButton("Result Window")
         self.result_window_button.clicked.connect(self.change_to_result_window)
-        widgets = [self.setup_window_button,self.result_window_button]
+        self.load_model_button = QPushButton("Load Model")
+        self.load_model_button.clicked.connect(self.load_model_dialog)
+        widgets = [self.setup_window_button,self.result_window_button, self.load_model_button]
 
         def hide_widgets():
             for widget in widgets:
@@ -872,6 +949,8 @@ class MainWindow(QWidget):
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.setup_window_button)
         top_layout.addWidget(self.result_window_button)
+        top_layout.addWidget(self.load_model_button)
+
         #Container of main bar - this for the border:------------------
         top_panel_widget = QWidget()
         top_panel_widget.setLayout(top_layout)
@@ -901,6 +980,49 @@ class MainWindow(QWidget):
     def cant_be_plotted(self, res):
         self.setup_window.cant_be_plotted(res)
 
+    def load_model_dialog(self):
+        """Abre diálogo para seleccionar .joblib, valida y propaga la carga."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load model",
+            "",
+            "Models (*.joblib);;All files (*.*)"
+        )
+        if not file_path:
+            return
+
+        try:
+            model_data = joblib.load(file_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Error loading", f"Could not load model file:\n{str(e)}")
+            return
+
+        # Validar estructura mínima esperada (según cómo guardas modelos)
+        required_keys = {"formula", "input_columns", "output_column", "metrics", "description"}
+        if not isinstance(model_data, dict) or not required_keys.issubset(set(model_data.keys())):
+            QMessageBox.critical(self, "Invalid model", "The selected file does not contain a valid model.")
+            return
+
+        # Si todo OK, aplicar la actualización de la UI
+        try:
+            # Oculta/ajusta SetupWindow (ya no necesitamos carga/dataset)
+            if hasattr(self.setup_window, "on_model_loaded"):
+                self.setup_window.on_model_loaded(model_data)
+            else:
+                # Por compatibilidad, ocultar controles básicos
+                self.setup_window.hide_all_containers()
+                self.setup_window.btn_open_file.setVisible(False)
+                self.setup_window.path_display.setVisible(False)
+                self.setup_window.table.setVisible(False)
+
+            # Pasa datos a ResultWindow para que muestre fórmula, métricas y descripción
+            self.result_window.load_model_data(model_data)
+
+            QMessageBox.information(self, "Model loaded", "Model loaded successfully.")
+            # Ir a ResultWindow
+            self.change_to_result_window()
+        except Exception as e:
+            QMessageBox.critical(self, "Error", f"Error updating UI after loading model:\n{str(e)}")
 
 # Just a function to set the icon.jpg as the app icon and as the docker icon
 # at the moment just compatible with MacOS.
