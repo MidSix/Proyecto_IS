@@ -221,11 +221,12 @@ class SetupWindow(QWidget):
         self.summary_model_creation_label.setStyleSheet("""
                                     QLabel {
                                     font-family: 'Consolas';
-                                    font-size: 10pt;
+                                    font-size: 13px;
                                     color: #E0E0E0;
                                     }
                                     """)
         self.container_summary_model_vlayout.addWidget(self.summary_model_label)
+        self.container_summary_model_vlayout.addStretch(1)
         self.container_summary_model_vlayout.addWidget(self.summary_model_creation_label)
         self.container_summary_model.setLayout(self.container_summary_model_vlayout)
 
@@ -256,11 +257,13 @@ class SetupWindow(QWidget):
 
         output_col = QVBoxLayout()
         output_col.addWidget(self.output_label)
+        output_col.addStretch(1)#To add some space between label and selector
         output_col.addWidget(self.output_selector)
         output_col.addWidget(self.confirm_button)
 
         preprocess_col = QVBoxLayout()
         preprocess_col.addWidget(self.preprocess_label)
+        preprocess_col.addStretch(1)
         preprocess_col.addWidget(self.strategy_box)
         preprocess_col.addWidget(self.constant_name_edit)
         preprocess_col.addWidget(self.apply_button)
@@ -606,7 +609,7 @@ class SetupWindow(QWidget):
             self.container_selector_widget.setVisible(False)
             self.container_preprocess_widget.setVisible(False)
             self.container_splitter_widget.setVisible(False)
-            
+
             self.label.setVisible(False)
             self.container_summary_model.setVisible(False)
             self.summary_model_creation_label.clear()
@@ -639,12 +642,12 @@ class ResultWindow(QWidget):
         self.placeholder_text.setAlignment(Qt.AlignCenter)
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
         self.summary = QLabel()
-        self.summary.setAlignment(Qt.AlignCenter)
+        self.summary.setAlignment(Qt.AlignLeft)
         #Just some QSS to make the self.summary looks better.
         self.summary.setStyleSheet("""
                                     QLabel {
                                     font-family: 'Consolas';
-                                    font-size: 10pt;
+                                    font-size: 14pt;
                                     color: #E0E0E0;
                                     }
                                     """)
@@ -658,10 +661,14 @@ class ResultWindow(QWidget):
         self.container_model_widget = QWidget()
         self.container_description_widget = QWidget()
         self.container_graph_widget = QWidget()
+        self.container_simple_regression_graph_widget = QWidget()
+        self.container_multiple_regression_graph_widget =QWidget()
         #-------------------------Layouts------------------------------------
         self.container_description_layout = QVBoxLayout()
         self.container_model_layout = QVBoxLayout()
         self.container_graph_layout = QVBoxLayout()
+        self.container_simple_regression_graph_layout = QHBoxLayout()
+        self.container_multiple_regression_graph_layout = QHBoxLayout()
         self.main_container_layout = QHBoxLayout()
         self.main_layout = QVBoxLayout()
         #-------------------------Set Layouts--------------------------------
@@ -687,22 +694,21 @@ class ResultWindow(QWidget):
     def clear_result_window(self):
         try:
             if self.toolbar is not None:
-                self.container_graph_layout.removeWidget(self.toolbar)
-                self.container_graph_layout.removeWidget(self.graph)
+                self.container_graph_layout.removeWidget(self.container_simple_regression_graph_widget)
                 self.toolbar.deleteLater()
                 self.graph.deleteLater()
                 self.toolbar = None
                 self.graph = None
             if self.parity_toolbar is not None:
-                self.container_graph_layout.removeWidget(self.parity_toolbar)
-                self.container_graph_layout.removeWidget(self.parity_graph)
+                self.container_graph_layout.removeWidget(self.container_multiple_regression_graph_widget)
                 self.parity_toolbar.deleteLater()
                 self.parity_graph.deleteLater()
                 self.parity_toolbar = None
                 self.parity_graph = None
+            self.model_description_edit.clear()
         except Exception:
                 pass
-        
+
     def load_model_data(self, model_data: dict):
         """
         Recibe el diccionario guardado (joblib) y actualiza ResultWindow:
@@ -755,10 +761,7 @@ class ResultWindow(QWidget):
         self.summary.setText(self.metrics[2])
         self.show_all_containers(True)
         self.create_parity_figure()
-        self.container_graph_layout.addWidget(self.parity_toolbar)
-        self.container_graph_layout.addWidget(self.parity_graph)
         self.container_graph_widget.setLayout(self.container_graph_layout)
-        self.model_description_edit.clear()
         self.main_container.show()
 
     #---------------------------Connections-------------------------------
@@ -827,23 +830,35 @@ class ResultWindow(QWidget):
         #so the solution is to check if its visible in an specific view, not
         #necessarily the actual one. So we passed self which is checking if it's
         #visible in this view, ResultWindow, not in SetupWindow xd. Now works.
-        fig = self.model.get_plot_figure()
-        self.graph = FigureCanvas(fig)
-        self.toolbar = NavigationToolbar(self.graph, self)
-        self.container_graph_layout.addWidget(self.toolbar)
-        self.container_graph_layout.addWidget(self.graph)
+        self.create_simple_regression_figure()
+        self.create_parity_figure()
         self.container_graph_widget.setLayout(self.container_graph_layout)
         self.show_all_containers(True)
-        self.model_description_edit.clear()
-        self.create_parity_figure()
         self.main_container.show()
 
     def create_parity_figure(self):
         parity_fig = self.model.get_y_vs_yhat_figure()
         self.parity_graph = FigureCanvas(parity_fig)
         self.parity_toolbar = NavigationToolbar(self.parity_graph, self)
-        self.container_graph_layout.addWidget(self.parity_toolbar)
-        self.container_graph_layout.addWidget(self.parity_graph)
+        self.parity_toolbar.setOrientation(Qt.Vertical)
+        self.parity_toolbar.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.parity_toolbar.setMaximumWidth(self.parity_toolbar.sizeHint().width())
+        self.container_multiple_regression_graph_layout.addWidget(self.parity_toolbar)
+        self.container_multiple_regression_graph_layout.addWidget(self.parity_graph)
+        self.container_multiple_regression_graph_widget.setLayout(self.container_multiple_regression_graph_layout)
+        self.container_graph_layout.addWidget(self.container_multiple_regression_graph_widget)
+
+    def create_simple_regression_figure(self):
+        fig = self.model.get_plot_figure()
+        self.graph = FigureCanvas(fig)
+        self.toolbar = NavigationToolbar(self.graph, self)
+        self.toolbar.setOrientation(Qt.Vertical)
+        self.toolbar.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.toolbar.setMaximumWidth(self.toolbar.sizeHint().width())
+        self.container_simple_regression_graph_layout.addWidget(self.toolbar)
+        self.container_simple_regression_graph_layout.addWidget(self.graph)
+        self.container_simple_regression_graph_widget.setLayout(self.container_simple_regression_graph_layout)
+        self.container_graph_layout.addWidget(self.container_simple_regression_graph_widget)
 
     def save_model_dialog(self):
         """
@@ -931,9 +946,9 @@ class MainWindow(QWidget):
         self.setup_window.train_test_df_ready.connect(self.train_test_df_ready)
         self.result_window.cant_be_plotted.connect(self.cant_be_plotted)
         #---------------------------------------------------
-        self.setup_window_button = QPushButton("Setup Window")
+        self.setup_window_button = QPushButton("Data Management")
         self.setup_window_button.clicked.connect(self.change_to_setup_window)
-        self.result_window_button = QPushButton("Result Window")
+        self.result_window_button = QPushButton("Model Managent")
         self.result_window_button.clicked.connect(self.change_to_result_window)
         self.load_model_button = QPushButton("Load Model")
         self.load_model_button.clicked.connect(self.load_model_dialog)

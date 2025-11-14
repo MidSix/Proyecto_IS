@@ -79,7 +79,7 @@ class LinearRegressionModel:
         self.initialized = True
         # returns a tuple with two dictionaries
         self.formula_string()
-        self.summary = (f'Regression Line:\n {self.regression_line}\n\n'
+        self.summary = (f'Regression Line:\n{self.regression_line}\n\n'
                         'Train metrics:\n'
                         f'MSE : {self.metrics_train["mse"]}\n'
                         f'R2  : {self.metrics_train["r2"]}\n\n'
@@ -177,32 +177,23 @@ class LinearRegressionModel:
         y_true_vec = np.ravel(y_true.values if hasattr(y_true, "values") else y_true)
         y_pred_vec = np.ravel(self.model.predict(X))
 
-        # Fit ŷ ≈ a*y + b
-        reg = LinearRegression()
-        reg.fit(y_true_vec.reshape(-1, 1), y_pred_vec)
-        a = float(reg.coef_[0])
-        b = float(reg.intercept_)
-
         # Common range (square plot to visualize ŷ = y at 45°)
         lo = float(min(y_true_vec.min(), y_pred_vec.min()))
         hi = float(max(y_true_vec.max(), y_pred_vec.max()))
         x_line = np.linspace(lo, hi, 200)
         y_line_ideal = x_line
-        y_line_fit = a * x_line + b
 
         # Figure
         fig = Figure(figsize=(6, 4), dpi=100)
         ax = fig.add_subplot(111)
 
         ax.scatter(y_true_vec, y_pred_vec, alpha=0.5, label=f"{split.capitalize()} points")
-        ax.plot(x_line, y_line_ideal, linewidth=2, label="Ideal  ŷ = y")
-        ax.plot(x_line, y_line_fit, linewidth=2, linestyle="--",
-                label=f"Fit  ŷ = {a:.3f}·y {'+' if b >= 0 else '-'} {abs(b):.3f}")
+        ax.plot(x_line, y_line_ideal, linewidth=2, label="Ideal  ŷ = y", color="red")
 
         ax.set_xlim(lo, hi)
         ax.set_ylim(lo, hi)
         ax.set_xlabel(f"{y_true.columns.tolist()[0] if hasattr(y_true, 'columns') else 'y'} (true)")
-        ax.set_ylabel("ŷ (predicted)")
+        ax.set_ylabel("ŷ n(predicted)")
         ax.set_title(f"Parity plot y vs ŷ ({split})")
         ax.legend()
         ax.grid(True, linestyle="--", alpha=0.3)
