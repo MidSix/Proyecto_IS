@@ -663,6 +663,10 @@ class ResultWindow(QWidget):
         self.container_graph_widget = QWidget()
         self.container_simple_regression_graph_widget = QWidget()
         self.container_multiple_regression_graph_widget =QWidget()
+        #------------------------for debug purposses only------------------------
+        #self.container_graph_widget.setStyleSheet("background: rgba(255,0,0,0.2);")
+        #self.container_simple_regression_graph_widget.setStyleSheet("background: rgba(0,255,0,0.2);")
+        #self.container_multiple_regression_graph_widget.setStyleSheet("background: rgba(0,0,255,0.2);")
         #-------------------------Layouts------------------------------------
         self.container_description_layout = QVBoxLayout()
         self.container_model_layout = QVBoxLayout()
@@ -695,12 +699,14 @@ class ResultWindow(QWidget):
         try:
             if self.toolbar is not None:
                 self.container_graph_layout.removeWidget(self.container_simple_regression_graph_widget)
+                self.container_simple_regression_graph_widget.setVisible(False)
                 self.toolbar.deleteLater()
                 self.graph.deleteLater()
                 self.toolbar = None
                 self.graph = None
             if self.parity_toolbar is not None:
                 self.container_graph_layout.removeWidget(self.container_multiple_regression_graph_widget)
+                self.container_multiple_regression_graph_widget.setVisible(False)
                 self.parity_toolbar.deleteLater()
                 self.parity_graph.deleteLater()
                 self.parity_toolbar = None
@@ -762,6 +768,7 @@ class ResultWindow(QWidget):
         self.show_all_containers(True)
         self.create_parity_figure()
         self.container_graph_widget.setLayout(self.container_graph_layout)
+        self.container_multiple_regression_graph_widget.setVisible(True)
         self.main_container.show()
 
     #---------------------------Connections-------------------------------
@@ -834,6 +841,8 @@ class ResultWindow(QWidget):
         self.create_parity_figure()
         self.container_graph_widget.setLayout(self.container_graph_layout)
         self.show_all_containers(True)
+        self.container_simple_regression_graph_widget.setVisible(True)
+        self.container_multiple_regression_graph_widget.setVisible(True)
         self.main_container.show()
 
     def create_parity_figure(self):
