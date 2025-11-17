@@ -656,6 +656,17 @@ class ResultWindow(QWidget):
         self.save_button = QPushButton("Save model")
         self.save_button.clicked.connect(self.save_model_dialog)
 
+        # --- LOAD MODEL (nuevo) ---
+        self.load_model_button = QPushButton("Load model")
+        self.load_model_button.clicked.connect(self.load_model_dialog_from_result)
+        self.model_path_label = QLabel("Path:")
+        self.model_path_label.setStyleSheet("color: gray;")
+        self.model_path_display = QLineEdit()
+        self.model_path_display.setReadOnly(True)
+        path_layout = QHBoxLayout()
+        path_layout.addWidget(self.model_path_label)
+        path_layout.addWidget(self.model_path_display)
+
         #------------------------containers--------------------------------
         self.main_container = QWidget()
         self.container_model_widget = QWidget()
@@ -676,6 +687,8 @@ class ResultWindow(QWidget):
         self.main_container_layout = QHBoxLayout()
         self.main_layout = QVBoxLayout()
         #-------------------------Set Layouts--------------------------------
+        self.container_description_layout.addLayout(path_layout)
+        self.container_description_layout.addWidget(self.load_model_button)
         self.container_description_layout.addWidget(self.model_description_edit)
         self.container_description_layout.addWidget(self.save_button)
         self.container_description_widget.setLayout(self.container_description_layout)
@@ -690,7 +703,7 @@ class ResultWindow(QWidget):
         self.container_model_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.main_layout.addWidget(self.placeholder_text, 1)
         self.main_layout.addWidget(self.main_container)
-        self.show_all_containers(False)
+        self.show_all_containers(True)
 
         self.setLayout(self.main_layout)
 
@@ -939,6 +952,35 @@ class ResultWindow(QWidget):
             ]
         for widget in widgets:
             widget.setVisible(value)
+
+    def load_model_dialog_from_result(self):
+        """Load model but from ResultWindow (Model Management tab)."""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Load model",
+            "",
+            "Models (*.joblib);;All files (*.*)"
+        )
+        if not file_path:
+            return
+
+        try:
+            model_data = joblib.load(file_path)
+        except Exception as e:
+            QMessageBox.critical(self, "Error loading", f"Could not load model file:\n{str(e)}")
+            return
+
+        # Validate model structure
+        required = {"formula", "input_columns", "output_column", "metrics", "description"}
+        if not isinstance(model_data, dict) or not required.issubset(model_data.keys()):
+            QMessageBox.critical(self, "Invalid model", "The selected file does not contain a valid model.")
+            return
+
+        # Update UI
+        self.model_path_display.setText(file_path)
+        self.load_model_data(model_data)
+        QMessageBox.information(self, "Model loaded", "Model loaded successfully.")
+
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -959,9 +1001,7 @@ class MainWindow(QWidget):
         self.setup_window_button.clicked.connect(self.change_to_setup_window)
         self.result_window_button = QPushButton("Model Managent")
         self.result_window_button.clicked.connect(self.change_to_result_window)
-        self.load_model_button = QPushButton("Load Model")
-        self.load_model_button.clicked.connect(self.load_model_dialog)
-        widgets = [self.setup_window_button,self.result_window_button, self.load_model_button]
+        widgets = [self.setup_window_button,self.result_window_button]
 
         def hide_widgets():
             for widget in widgets:
@@ -973,7 +1013,6 @@ class MainWindow(QWidget):
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.setup_window_button)
         top_layout.addWidget(self.result_window_button)
-        top_layout.addWidget(self.load_model_button)
 
         #Container of main bar - this for the border:------------------
         top_panel_widget = QWidget()
@@ -989,7 +1028,7 @@ class MainWindow(QWidget):
         self.stacked_widget.setCurrentIndex(0)
     def change_to_result_window(self):
         self.stacked_widget.setCurrentIndex(1)
-
+        
     #MainWindow as the orchestrator, the one which handle the communication
     #between these two classes.
     @pyqtSlot()
@@ -1004,49 +1043,6 @@ class MainWindow(QWidget):
     def cant_be_plotted(self, res):
         self.setup_window.cant_be_plotted(res)
 
-    def load_model_dialog(self):
-        """Abre diálogo para seleccionar .joblib, valida y propaga la carga."""
-        file_path, _ = QFileDialog.getOpenFileName(
-            self,
-            "Load model",
-            "",
-            "Models (*.joblib);;All files (*.*)"
-        )
-        if not file_path:
-            return
-
-        try:
-            model_data = joblib.load(file_path)
-        except Exception as e:
-            QMessageBox.critical(self, "Error loading", f"Could not load model file:\n{str(e)}")
-            return
-
-        # Validar estructura mínima esperada (según cómo guardas modelos)
-        required_keys = {"formula", "input_columns", "output_column", "metrics", "description"}
-        if not isinstance(model_data, dict) or not required_keys.issubset(set(model_data.keys())):
-            QMessageBox.critical(self, "Invalid model", "The selected file does not contain a valid model.")
-            return
-
-        # Si todo OK, aplicar la actualización de la UI
-        try:
-            # Oculta/ajusta SetupWindow (ya no necesitamos carga/dataset)
-            if hasattr(self.setup_window, "on_model_loaded"):
-                self.setup_window.on_model_loaded(model_data)
-            else:
-                # Por compatibilidad, ocultar controles básicos
-                self.setup_window.hide_all_containers()
-                self.setup_window.btn_open_file.setVisible(False)
-                self.setup_window.path_display.setVisible(False)
-                self.setup_window.table.setVisible(False)
-
-            # Pasa datos a ResultWindow para que muestre fórmula, métricas y descripción
-            self.result_window.load_model_data(model_data)
-
-            QMessageBox.information(self, "Model loaded", "Model loaded successfully.")
-            # Ir a ResultWindow
-            self.change_to_result_window()
-        except Exception as e:
-            QMessageBox.critical(self, "Error", f"Error updating UI after loading model:\n{str(e)}")
 
 # Just a function to set the icon.jpg as the app icon and as the docker icon
 # at the moment just compatible with MacOS.
