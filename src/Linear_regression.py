@@ -6,6 +6,9 @@ from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.datasets import fetch_california_housing#this dataset is for testing purposes only
 from typing import Optional
 from matplotlib import pyplot as plt, figure as PltObject
+import unittest  #For automatic testing purposes
+from sklearn.model_selection import train_test_split #Cool sklearn function to split data, so I don't have to import the data_split module here
+
 #This model is to be highly integrated with the gui.
 #I don't think I need to add memorization or saving/loading capabilities here,
 #so this will simply be a model object that the gui can interact with to create and evaluate linear regression models.
@@ -86,6 +89,7 @@ class LinearRegressionModel:
         plt.ylabel("Target")
         plt.title("Linear Regression")
         plt.legend()
+        plt.grid(True, linestyle='--', alpha=0.8)
         return plt #Returning the plt object for further manipulation or display
 
     def predict(self, X):
@@ -120,31 +124,54 @@ class LinearRegressionModel:
             'train': self.metrics_train,
             'test': self.metrics_test
         }
+class Test_linear_regression_model(unittest.TestCase): #Automatic testing class, this is how you use unittest module, specified on the Taiga story's DOD
+    def setUp(self):
+        self.model = LinearRegressionModel()
+        example_data = fetch_california_housing(as_frame=True) # Using only one feature for simplicity, also to allow plotting
+        self.y = example_data.target
+        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+            self.example_data, self.y, test_size=0.2, random_state=42
+        )
+
+    def test_fit_and_evaluate(self):
+        features=example_data.feature_names  # Using only one feature for simplicity, also to allow plotting
+        while 
+        train_metrics, test_metrics = self.model.fit_and_evaluate(
+            X_train, self.y_train, self.X_test, self.y_test
+        )
+        self.assertIsInstance(train_metrics, dict)
+        self.assertIsInstance(test_metrics, dict)
+        self.assertIsInstance(test_metrics['mse'], float)
+        self.assertIsInstance(test_metrics['r2'], float)
+        self.assertIsInstance(train_metrics['mse'], float)
+        self.assertIsInstance(train_metrics['r2'], float)
+        
+    def test_formula_string(self):
+        self.model.fit_and_evaluate(
+            self.X_train, self.y_train, self.X_test, self.y_test
+        )
+        formula = self.model.formula_string()
+        self.assertIn("MedInc", formula)
+
+    def test_can_plot(self):
+        self.model.fit_and_evaluate(
+            self.X_train, self.y_train, self.X_test, self.y_test
+        )
+        self.assertTrue(self.model.can_plot())
+
+    def test_get_plot_item(self):
+        self.model.fit_and_evaluate(
+            self.X_train, self.y_train, self.X_test, self.y_test
+        )
+        plt_obj = self.model.get_plot_item(
+            self.X_train, self.y_train, self.X_test, self.y_test
+        )
+        self.assertIsNotNone(plt_obj)
 
 
 if __name__ == "__main__":
     Ans=input("Run a test example of LinearRegressionModel? (y/n): ")
-    if Ans.lower() == "y":
-        from sklearn.model_selection import train_test_split
-        
-        model = LinearRegressionModel()
-        example_data = fetch_california_housing(as_frame=True)
-        columns=['MedInc', 'HouseAge', 'AveRooms', 'AveBedrms', 'Population', 'AveOccup', 'Latitude', 'Longitude']
-        feature=input(f"Select feature from {columns}(0-{len(columns)-1}): ")
-        while not feature in [str(i) for i in range(len(columns))]:
-            feature=input(f"Invalid selection. Select feature from {columns}(0-{len(columns)-1}): ")
-        X = example_data.data[[columns[int(feature)]]]  # Using only one feature 
-        y = example_data.target
-        
-        # Split the data into train and test sets
-        X_train, X_test, y_train, y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-        
-        model.fit_and_evaluate(X_train, y_train, X_test, y_test)
-        print("Formula:", model.formula_string())
-        print("Metrics:", model.metrics)
-        plt = model.get_plot_item(X_train, y_train, X_test, y_test)
-        plt.show()
+    if Ans.lower()=='y':
+        unittest.main()
     else:
         print("Ok, no test for you then.")
