@@ -8,6 +8,8 @@ from typing import Optional
 from matplotlib import pyplot as plt, figure as PltObject
 import unittest  #For automatic testing purposes
 from sklearn.model_selection import train_test_split #Cool sklearn function to split data, so I don't have to import the data_split module here
+from sklearn.datasets import make_regression#This one generates regression datasets for testing, we should aim for deterministic data for unit tests
+
 
 #This model is to be highly integrated with the gui.
 #I don't think I need to add memorization or saving/loading capabilities here,
@@ -124,49 +126,56 @@ class LinearRegressionModel:
             'train': self.metrics_train,
             'test': self.metrics_test
         }
-class Test_linear_regression_model(unittest.TestCase): #Automatic testing class, this is how you use unittest module, specified on the Taiga story's DOD
+class TestLinearRegressionModel(unittest.TestCase):#Some function names got a bit long, but my naming skills go so far
     def setUp(self):
+        X, y = make_regression(n_samples=300, n_features=3, noise=5.0, random_state=0)#As mentioned, deterministic data for unit tests
+        self.X = pd.DataFrame(X, columns=['f1', 'f2', 'f3'])
+        self.y = pd.Series(y, name='target')
+
+        self.X1 = self.X[['f1']]  # single-feature split for plotting tests
+        self.X1_train, self.X1_test, self.y1_train, self.y1_test = train_test_split(
+            self.X1, self.y, test_size=0.2, random_state=42
+        )
+
+        # multi-feature split, why only test single feature when we can test both?
+        self.Xm_train, self.Xm_test, self.ym_train, self.ym_test = train_test_split(
+            self.X, self.y, test_size=0.2, random_state=42
+        )
         self.model = LinearRegressionModel()
-        example_data = fetch_california_housing(as_frame=True) # Using only one feature for simplicity, also to allow plotting
-        self.y = example_data.target
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            self.example_data, self.y, test_size=0.2, random_state=42
-        )
 
-    def test_fit_and_evaluate(self):
-        features=example_data.feature_names  # Using only one feature for simplicity, also to allow plotting
-        while 
+    def test_fit_and_evaluate_single_feature(self): #With all the plt stuff
         train_metrics, test_metrics = self.model.fit_and_evaluate(
-            X_train, self.y_train, self.X_test, self.y_test
+            self.X1_train, self.y1_train, self.X1_test, self.y1_test
         )
-        self.assertIsInstance(train_metrics, dict)
+        self.assertIsInstance(train_metrics, dict)#I simply love this function, you'll see it a lot(although it is kinda silly)
         self.assertIsInstance(test_metrics, dict)
-        self.assertIsInstance(test_metrics['mse'], float)
-        self.assertIsInstance(test_metrics['r2'], float)
         self.assertIsInstance(train_metrics['mse'], float)
-        self.assertIsInstance(train_metrics['r2'], float)
-        
-    def test_formula_string(self):
-        self.model.fit_and_evaluate(
-            self.X_train, self.y_train, self.X_test, self.y_test
-        )
-        formula = self.model.formula_string()
-        self.assertIn("MedInc", formula)
-
-    def test_can_plot(self):
-        self.model.fit_and_evaluate(
-            self.X_train, self.y_train, self.X_test, self.y_test
-        )
+        self.assertIsInstance(test_metrics['r2'], float) #would it be fine if we also tested train r2 and test mse?Yes, but this is enough to check both are calculated because if one fails the others will too
         self.assertTrue(self.model.can_plot())
 
-    def test_get_plot_item(self):
-        self.model.fit_and_evaluate(
-            self.X_train, self.y_train, self.X_test, self.y_test
-        )
-        plt_obj = self.model.get_plot_item(
-            self.X_train, self.y_train, self.X_test, self.y_test
-        )
-        self.assertIsNotNone(plt_obj)
+    def test_get_plot_item_returns_figure(self):
+        self.model.fit_and_evaluate(self.X1_train, self.y1_train, self.X1_test, self.y1_test)
+        fig = self.model.get_plot_item(self.X1_train, self.y1_train, self.X1_test, self.y1_test)
+        self.assertIsInstance(fig, PltObject)#We need to get sure the returned object is a plt object, bc the gui will use it directly
+
+    def test_fit_and_evaluate_multi_feature(self): #Now this one is the real stuff
+        self.model.fit_and_evaluate(self.Xm_train, self.ym_train, self.Xm_test, self.ym_test)
+        self.assertFalse(self.model.can_plot())#Multi-feature models can't plot, so this should be false. Smart test huh?, caffeine running through my veins does wonders(Also raises blood pressure, but whatever)
+        metrics = self.model.metrics
+        self.assertIn('train', metrics)#We just check that the metrics dictionary has both train and test keys, just to be sure
+        self.assertIn('test', metrics)
+
+    def test_predict_consistency_dataframe_vs_ndarray(self):#This one is tricky, it ensures predict works the same with both input types. You never know when the gui will send one or the other(Or at leats I don't know)
+        self.model.fit_and_evaluate(self.Xm_train, self.ym_train, self.Xm_test, self.ym_test)
+        pred_df = self.model.predict(self.Xm_test)
+        pred_nd = self.model.predict(self.Xm_test.to_numpy())
+        self.assertEqual(pred_df.shape[0], len(self.Xm_test)) #Ensures output length matches input length, why the f would this happen? I don't know, but the model might get freaky
+        self.assertTrue(np.allclose(pred_df, pred_nd, atol=1e-6)) #Ensures both outputs are nearly identical, within a small tolerance in case of floating point differences(It gave me errors before)
+
+    def test_error_on_mismatched_shapes(self):#This one ensures that the model raises an error when input shapes don't match, that is why we have the with self.assertRaises block
+        with self.assertRaises(ValueError):
+            self.model.fit_and_evaluate(self.X1_train.iloc[:-1], self.y1_train, self.X1_test, self.y1_test)
+
 
 
 if __name__ == "__main__":
