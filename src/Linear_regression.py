@@ -179,8 +179,4 @@ class TestLinearRegressionModel(unittest.TestCase):#Some function names got a bi
 
 
 if __name__ == "__main__":
-    Ans=input("Run a test example of LinearRegressionModel? (y/n): ")
-    if Ans.lower()=='y':
-        unittest.main()
-    else:
-        print("Ok, no test for you then.")
+    unittest.main()
