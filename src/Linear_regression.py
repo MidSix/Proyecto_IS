@@ -60,7 +60,7 @@ class LinearRegressionModel:
 
         # We save feature names for formula visual representation
         self.feature_names = self.x_train.columns.tolist()
-
+        self.target_name = self.y_train.columns.tolist()[0]
         # Fit and predictions
         self.model.fit(self.x_train, self.y_train)
         self.coef_ = self.model.coef_
@@ -99,7 +99,7 @@ class LinearRegressionModel:
         # Intercept with explicit sign
         b0 = float(self.intercept_)
         sign = '+' if b0 >= 0 else '-'
-        self.regression_line = f"{self.y_train.columns.tolist()[0]} = {' + '.join(terms)} {sign} {abs(b0):.3f}"
+        self.regression_line = f"{self.target_name} = {' + '.join(terms)} {sign} {abs(b0):.3f}"
         return self.regression_line
 
     def can_plot(self):
@@ -211,23 +211,36 @@ class LinearRegressionModel:
         return self.initialized
 
     @property
-    def get_R2(self):  # This two are to be called by gui after evaluation, to show results
+    def get_test_R2(self):
         if self.initialized:
             return self.metrics_test['r2']  # DOD requests test metrics only
-        return "NO DATA"  # If not initialized
+        return None  # If not initialized
 
     @property
-    def get_MSE(self):
+    def get_train_R2(self):
+        if self.initialized:
+            return self.metrics_train['r2']  # DOD requests test metrics only
+        return None  # If not initialized
+
+    @property
+    def get_test_MSE(self):
         """Returns MSE on test data or high value if uninitialized"""
         if self.initialized:
             return self.metrics_test['mse']  # DOD requests test metrics only
-        return "NO DATA"  # If not initialized
+        return None  # If not initialized
+
+    @property
+    def get_train_MSE(self):
+        """Returns MSE on test data or high value if uninitialized"""
+        if self.initialized:
+            return self.metrics_train['mse']  # DOD requests test metrics only
+        return None  # If not initialized
 
     @property
     def metrics(self):
         """Returns all metrics in a clear format"""
         if not self.initialized:
-            return "NO DATA"
+            return None
         return {
             'train': self.metrics_train,
             'test': self.metrics_test

@@ -2,6 +2,7 @@
 import sys
 import os
 import joblib
+import model_handler as mh
 import pandas as pd
 import qdarkstyle
 import numpy as np
@@ -257,15 +258,15 @@ class SetupWindow(QWidget):
 
         output_col = QVBoxLayout()
         output_col.addWidget(self.output_label)
-        output_col.addStretch(1)#To add some space between label and selector
         output_col.addWidget(self.output_selector)
+        output_col.addStretch(1)#To add some space between label and selector
         output_col.addWidget(self.confirm_button)
 
         preprocess_col = QVBoxLayout()
         preprocess_col.addWidget(self.preprocess_label)
-        preprocess_col.addStretch(1)
         preprocess_col.addWidget(self.strategy_box)
         preprocess_col.addWidget(self.constant_name_edit)
+        preprocess_col.addStretch(1)
         preprocess_col.addWidget(self.apply_button)
 
         splitter_col = QVBoxLayout()
@@ -594,34 +595,6 @@ class SetupWindow(QWidget):
                                     f"{msg_summary}")
         self.container_summary_model.show()
 
-    def on_model_loaded(self, model_data: dict):
-        """
-        Ajusta la UI cuando se carga un modelo previamente guardado:
-        - Oculta controles de carga/dataset/selección.
-        - Muestra un pequeño resumen en el contenedor de summary (opcional).
-        """
-        # Ocultar controles relacionados con carga/dataset
-        try:
-            # Oculta botones y entradas para cargar dataset/selección
-            self.btn_open_file.setVisible(False)
-            self.path_display.setVisible(False)
-            self.table.setVisible(False)
-            self.container_selector_widget.setVisible(False)
-            self.container_preprocess_widget.setVisible(False)
-            self.container_splitter_widget.setVisible(False)
-
-            self.label.setVisible(False)
-            self.container_summary_model.setVisible(False)
-            self.summary_model_creation_label.clear()
-
-            # Guardar info mínima por si se necesita
-            self.selected_inputs = model_data.get("input_columns", [])
-            self.selected_output = model_data.get("output_column", None)
-            self.model_description = model_data.get("description", "")
-        except Exception as e:
-            QMessageBox.warning(self, "UI update", f"Model loaded but failed to update some controls:\n{str(e)}")
-
-
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
     def __init__(self, stacked_widget):
@@ -729,37 +702,8 @@ class ResultWindow(QWidget):
                 pass
 
     def load_model_data(self, model_data: dict):
-        """
-        Recibe el diccionario guardado (joblib) y actualiza ResultWindow:
-        - Muestra fórmula y métricas en self.summary
-        - Rellena la descripción en model_description_edit
-        - Oculta placeholder y muestra contenedores de modelo (sin gráficas)
-        """
         try:
-            # Limpia cualquier figura previa
-            self.clear_result_window()
-
-            formula = model_data.get("formula", "")
-            input_cols = model_data.get("input_columns", [])
-            output_col = model_data.get("output_column", "")
-            metrics = model_data.get("metrics", {})
-            description = model_data.get("description", "")
-
-            # Construir texto de resumen atractivo
-            train_metrics = metrics.get("train", {})
-            test_metrics = metrics.get("test", {})
-
-            summary_lines = [
-                f"Formula: {formula}",
-                f"Inputs: {', '.join(input_cols)}",
-                f"Output: {output_col}",
-                "",
-                "Train metrics:",
-                f"  R2: {train_metrics.get('R2', 'N/A')}, MSE: {train_metrics.get('MSE', 'N/A')}",
-                "",
-                "Test metrics:",
-                f"  R2: {test_metrics.get('R2', 'N/A')}, MSE: {test_metrics.get('MSE', 'N/A')}",
-            ]
+            summary_lines, description = mh.load_model_data(model_data)
             self.summary.setText("\n".join(summary_lines))
 
             # Poner la descripción si existe
@@ -770,8 +714,6 @@ class ResultWindow(QWidget):
             self.show_all_containers(True)
             self.main_container.show()
 
-            # No intentamos mostrar gráficos porque el model_data guardado no incluye el objeto sklearn
-            # Si quisieras re-crear gráficas necesitarías guardar coeficientes y reconstruir el plotting.
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to show loaded model:\n{str(e)}")
 
@@ -820,18 +762,6 @@ class ResultWindow(QWidget):
         #df over and over again for each method we call inside model.
         self.clear_result_window()
         self.metrics = self.model.fit_and_evaluate()
-        #---------------------------Save_models-------------------------------
-        #Here is all the neccesary attributes to save
-        self.train_r2 = self.model.metrics_train['r2']
-        self.train_mse = self.model.metrics_train['mse'] #MSE mean squared error
-        self.test_r2 = self.model.metrics_test['r2']
-        self.test_mse = self.model.metrics_test['mse']
-        self.regression_line = self.model.regression_line #This is the formula of the reggression line
-        #this are the variables of input(x) and output(y) names:
-        self.x_train = self.model.x_train.columns.tolist() #names of input columns :list[str]
-        self.y_train = self.model.y_train.columns.tolist()[0] #name of output column :list[str]
-        #self.model_description = data[2] #This is the description the user wrote when creating the model
-        #---------------------------Save_models-------------------------------
         error = self.metrics[3]
         if error is not None:
             self.cant_be_plotted.emit(error)
@@ -897,11 +827,6 @@ class ResultWindow(QWidget):
             QMessageBox.information(self, "Info", "Model description captured.\n"
             "It will be attached to the model.")
         try:
-            # We verify that a model has been trained
-            if not hasattr(self, "train_r2"):
-                QMessageBox.warning(self, "Mistake", "There is no trained model to save.")
-                return
-
             # Dialogue to choose a route
             file_path, _ = QFileDialog.getSaveFileName(
                 self,
@@ -909,31 +834,13 @@ class ResultWindow(QWidget):
                 "",
                 "Models (*.joblib)"
             )
-
-            if not file_path:
-                return
-            if not file_path.endswith(".joblib"):
-                file_path += ".joblib"
-
-            # Structure to be saved
-            model_data = {
-                "formula": self.regression_line,
-                "input_columns": self.x_train,
-                "output_column": self.y_train,
-                "metrics": {
-                    "train": {"R2": self.train_r2, "MSE": self.train_mse},
-                    "test": {"R2": self.test_r2, "MSE": self.test_mse},
-                },
-                "description": self.model_description,
-            }
-
-            joblib.dump(model_data, file_path)
-
+            mh.save_model_data(file_path, self.model, self.model_description)
             QMessageBox.information(
                 self,
                 "Success",
                 f"The model has been saved successfully in:\n{file_path}"
             )
+            self.model_description_edit.clear()
 
         except Exception as e:
             QMessageBox.critical(
@@ -1028,7 +935,7 @@ class MainWindow(QWidget):
         self.stacked_widget.setCurrentIndex(0)
     def change_to_result_window(self):
         self.stacked_widget.setCurrentIndex(1)
-        
+
     #MainWindow as the orchestrator, the one which handle the communication
     #between these two classes.
     @pyqtSlot()
