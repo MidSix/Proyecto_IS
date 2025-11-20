@@ -178,5 +178,5 @@ class TestLinearRegressionModel(unittest.TestCase):#Some function names got a bi
 
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":#I always love to put something fancy here, but the DOD had to be boring and ask for CI/CD compatibility(no fun allowed)
     unittest.main()
