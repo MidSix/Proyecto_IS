@@ -5,7 +5,8 @@ from sklearn.linear_model import LinearRegression as SklearnLinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
 from sklearn.datasets import fetch_california_housing#this dataset is for testing purposes only
 from typing import Optional
-from matplotlib import pyplot as plt, figure as PltObject
+from matplotlib import pyplot as plt
+from matplotlib.figure import Figure as PltObject
 import unittest  #For automatic testing purposes
 from sklearn.model_selection import train_test_split #Cool sklearn function to split data, so I don't have to import the data_split module here
 from sklearn.datasets import make_regression#This one generates regression datasets for testing, we should aim for deterministic data for unit tests
@@ -81,18 +82,34 @@ class LinearRegressionModel:
         elif not self.initialized:
             raise ValueError("Model not initialized") #We could also return None or an empty plot, but this informs the user better
 
-        x_line = np.linspace(min(X_train.iloc[:,0]), max(X_train.iloc[:,0]), 100)
-        y_line = self.model.predict(x_line.reshape(-1, 1))
+        # normalize X inputs to 1D numeric arrays (works with DataFrame or Series), this is to avoid issues when plotting
+        if isinstance(X_train, pd.DataFrame):
+            x_train_vals = X_train.iloc[:, 0].to_numpy().ravel()
+        else:
+            x_train_vals = np.asarray(X_train).ravel()
+        if isinstance(X_test, pd.DataFrame):
+            x_test_vals = X_test.iloc[:, 0].to_numpy().ravel()
+        else:
+            x_test_vals = np.asarray(X_test).ravel()
+
+        x_line = np.linspace(x_train_vals.min(), x_train_vals.max(), 100)
+        # build DataFrame with same feature name to avoid sklearn warning when predicting, this error only appears when feature names are set
+        if self.feature_names is not None and len(self.feature_names) == 1:
+            x_line_for_pred = pd.DataFrame(x_line.reshape(-1, 1), columns=self.feature_names)
+        else:
+           x_line_for_pred = x_line.reshape(-1, 1)
+
+        y_line = self.model.predict(x_line_for_pred)
         plt.figure(figsize=(12, 8))
-        plt.scatter(X_train, y_train, color='blue', label='Train Data', alpha=0.5, s=20)  # alpha being transparency, s being point size
-        plt.scatter(X_test, y_test, color='green', label='Test Data', alpha=0.5, s=20)
+        plt.scatter(x_train_vals, y_train, color='blue', label='Train Data', alpha=0.5, s=20)# alpha being transparency, s being point size
+        plt.scatter(x_test_vals, y_test, color='green', label='Test Data', alpha=0.5, s=20)
         plt.plot(x_line, y_line, color='red', label='Prediction Line', linewidth=3)
         plt.xlabel(self.feature_names[0])#DOD requests feature name in plot
         plt.ylabel("Target")
         plt.title("Linear Regression")
         plt.legend()
         plt.grid(True, linestyle='--', alpha=0.8)
-        return plt #Returning the plt object for further manipulation or display
+        return plt.gcf() #Returning the matplotlib.figure.Figure object for further manipulation or display
 
     def predict(self, X):
         """Makes predictions on new data"""
