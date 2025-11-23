@@ -49,7 +49,7 @@ class PandasModel(QAbstractTableModel):
             return "" if pd.isna(val) else str(val)
 
         if role == Qt.BackgroundRole:
-            # Si la columna está marcada, pintamos TODA la columna
+            # If the column is marked, we paint the ENTIRE column.
             if col_name in self.highlight_cols:
                 return QBrush(self.highlight_color)
 

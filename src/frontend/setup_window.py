@@ -190,8 +190,8 @@ class SetupWindow(QWidget):
                                       alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_splitter_widget,
                                       alignment=Qt.AlignLeft)
-        # IMPORTANTE: añadir el contenedor del modelo justo
-        # DESPUÉS del contenedor del splitter
+        # IMPORTANT: Add the model container right
+        # AFTER the splitter container
         bottom_panel_layout.addWidget(self.container_summary_model,
                                       alignment=Qt.AlignLeft)
 
@@ -444,26 +444,26 @@ class SetupWindow(QWidget):
             QMessageBox.critical(self, "Error", f"Error during"
                                 f"data splitting:\n{str(e)}")
             return
-        # Mostrar mensaje de Split exitoso con summary
+        # Display successful split message with summary
         QMessageBox.information(self, "Split successful",
         f"Division was correctly done.\n\n{msg_summary}")
-        # Preparar interfaz para la creación del modelo
+        # Prepare interface for model creation
         self.container_summary_model.hide()
         self.summary_model_creation_label.clear()
         self.create_model(msg_summary)
 
-    def create_model(self, msg_summary): #Frontend
+    def create_model(self, msg_summary): # Frontend
         payload = [(self.train_df, self.test_df), msg_summary]
         self.train_test_df_ready.emit(payload)
 
-        # Mantener la lógica de ploteo/errores: si ResultWindow
-        # notificó que no se pudo plotea
+        # Maintain plotting/error logic: if ResultWindow
+        # reported that it could not be plotted
         if not self.was_succesfully_plotted:
             QMessageBox.warning(self, "Failure", str(self.plotted_error))
-            #No mostrar summary_model_creation_label si hubo fallo
+            # Do not display summary_model_creation_label if there was an error
             return
 
-        # Notificaciones de éxito (las que antes estaban tras el Split)
+        # Success notifications (those that were previously after the Split)
         if len(self.selected_inputs) > 1:
             QMessageBox.information(self, "Model sucessfully created",
                                     "multiple regression succesfully done\n\n"
@@ -483,7 +483,7 @@ class SetupWindow(QWidget):
                                                         f"{msg_summary}")
         self.container_summary_model.show()
 
-    def strategy_box_changed(self, option_selected) -> None: #Frontend
+    def strategy_box_changed(self, option_selected) -> None: # Frontend
         is_cte = option_selected == "Fill with constant"
         self.constant_name_edit.setVisible(is_cte)
         if is_cte:
@@ -494,6 +494,6 @@ class SetupWindow(QWidget):
 
     #-------------------------Connections:------------------------------
     @pyqtSlot(object)
-    def cant_be_plotted(self, res): #Frontend
+    def cant_be_plotted(self, res): # Frontend
         self.was_succesfully_plotted = False
         self.plotted_error = res

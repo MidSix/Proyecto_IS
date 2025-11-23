@@ -56,7 +56,7 @@ class ResultWindow(QWidget):
         self.save_button = QPushButton("Save model")
         self.save_button.clicked.connect(self.save_model_dialog)
 
-        # --- LOAD MODEL (nuevo) ---
+        # --- LOAD MODEL (new) ---
         self.load_model_button = QPushButton("Load model")
         self.load_model_button.clicked.connect(
             self.load_model_dialog_from_result
@@ -113,8 +113,8 @@ class ResultWindow(QWidget):
 
         self.setLayout(self.main_layout)
 
-    #Methods:
-    def clear_result_window(self): #Frontend
+    # Methods:
+    def clear_result_window(self): # Frontend
         try:
             if self.toolbar is not None:
                 self.container_graph_layout.removeWidget(
@@ -138,15 +138,15 @@ class ResultWindow(QWidget):
         except Exception:
                 pass
 
-    def load_model_data_GUI(self, model_data: dict): #Frontend
+    def load_model_data_GUI(self, model_data: dict): # Frontend
         try:
             summary_lines, description = load_model_data(model_data)
             self.summary.setText("\n".join(summary_lines))
 
-            # Poner la descripción si existe
+            # Add the description if it exists
             self.model_description_edit.setPlainText(description or "")
 
-            # Mostrar contenedores adecuados
+            # Show suitable containers
             self.clear_result_window()
             self.placeholder_text.hide()
             self.show_all_containers(True)
@@ -156,7 +156,7 @@ class ResultWindow(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to"
                                  f"show loaded model:\n{str(e)}")
 
-    def multiple_linear_regression(self): #Frontend
+    def multiple_linear_regression(self): # Frontend
         self.clear_result_window()
         self.summary.setText(self.metrics[2])
         self.show_all_containers(True)
@@ -165,7 +165,7 @@ class ResultWindow(QWidget):
         self.container_multiple_regression_graph_widget.setVisible(True)
         self.main_container.show()
 
-    def simple_linear_regression(self): #Frontend
+    def simple_linear_regression(self): # Frontend
         self.clear_result_window()
         self.summary.setText(self.metrics[2])
         fig = self.model.get_plot_figure()
@@ -190,7 +190,7 @@ class ResultWindow(QWidget):
         self.main_container.show()
     #---------------------------Connections-----------------------------
     @pyqtSlot(object)
-    def another_file_opened(self): #Frontend
+    def another_file_opened(self): # Frontend
         self.clear_result_window()
         self.summary.hide()
         self.main_container.hide()
@@ -239,7 +239,7 @@ class ResultWindow(QWidget):
             self.simple_linear_regression()
             return
 
-    def create_parity_figure(self): #Frontend
+    def create_parity_figure(self): # Frontend
         parity_fig = self.model.get_y_vs_yhat_figure()
         self.parity_graph = FigureCanvas(parity_fig)
         self.parity_toolbar = NavigationToolbar(self.parity_graph, self)
@@ -269,10 +269,10 @@ class ResultWindow(QWidget):
         along with its essential information.
         Data and graphics are excluded.
         """
-        # Guardar descripción escrita por el usuario como atributo
+        # Save user-written description as attribute
         self.model_description = self.model_description_edit.toPlainText()
         if not self.model_description.strip():
-            # Avisar pero continuar con la creación del modelo
+            # Give notice but continue with the creation of the model
             QMessageBox.information(self, "Info", "No model description"
                                                     "was added.\n"
             "The model will be created without a description.")
