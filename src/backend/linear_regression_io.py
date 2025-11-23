@@ -1,8 +1,13 @@
 import joblib
-
+# Don't need to use a class. We don't need to store states.
+# I mean, you could store states but they are meaningless here.
+# A class is only useful when you need to store meaningful
+# states(attributes) and use methods associated to those states.
+# We don't need that here.
 def load_model_data(model_data: dict):
     """
-    load model data from a dictionary and returns a summary and description.
+    load model data from a dictionary and
+    returns a summary and description.
     """
     try:
 
@@ -17,16 +22,29 @@ def load_model_data(model_data: dict):
         test_metrics = metrics.get("test", {})
 
         summary_lines = [
-            f"Formula: {formula}",
+            f"Regression Line:",
+            "",
+            f"{formula}",
+            "",
             f"Inputs: {', '.join(input_cols)}",
             f"Output: {output_col}",
             "",
             "Train metrics:",
-            f"  R2: {train_metrics.get('R2', 'N/A')}, MSE: {train_metrics.get('MSE', 'N/A')}",
+            f"MSE: {train_metrics.get('MSE', 'N/A')}",
+            f"R2: {train_metrics.get('R2', 'N/A')}",
             "",
             "Test metrics:",
-            f"  R2: {test_metrics.get('R2', 'N/A')}, MSE: {test_metrics.get('MSE', 'N/A')}",
+            f"MSE: {test_metrics.get('MSE', 'N/A')}",
+            f"R2: {test_metrics.get('R2', 'N/A')}"
         ]
+
+        # f'Regression Line:\n{self.regression_line}\n\n'
+        # 'Train metrics:\n'
+        # f'MSE : {self.metrics_train["mse"]}\n'
+        # f'R2  : {self.metrics_train["r2"]}\n\n'
+        # 'Test metrics\n'
+        # f'MSE : {self.metrics_test["mse"]}\n'
+        # f'R2  : {self.metrics_test["r2"]}'
         return summary_lines, description
     except Exception as e:
         raise e
@@ -38,14 +56,16 @@ def save_model_data(file_path: str, model: dict, model_description: str):
         if not file_path.endswith(".joblib"):
                 file_path += ".joblib"
 
-            # Structure to be saved
+        # Structure to be saved
         model_data = {
                 "formula": model.regression_line,
                 "input_columns": model.feature_names,
                 "output_column": model.target_name,
                 "metrics": {
-                    "train": {"R2": model.get_train_R2, "MSE": model.get_train_MSE},
-                    "test": {"R2": model.get_test_R2, "MSE": model.get_test_MSE},
+                    "train": {"R2": model.get_train_R2,
+                              "MSE": model.get_train_MSE},
+                    "test": {"R2": model.get_test_R2,
+                             "MSE": model.get_test_MSE},
                 },
                 "description": model_description
             }

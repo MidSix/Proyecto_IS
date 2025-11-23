@@ -1,18 +1,21 @@
-from data_module import DataModule
 import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
-from sklearn.datasets import fetch_california_housing  # this dataset is for testing purposes only
+ # this dataset is for testing purposes only
+from sklearn.datasets import fetch_california_housing
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from typing import Optional
 
 
 # This model is to be highly integrated with the gui.
-# I don't think I need to add memorization or saving/loading capabilities here,
-# so this will simply be a model object that the gui can interact with to create and evaluate linear regression models.
-# As stated, all comments and docstrings will be in English for consistency with the rest of the codebase.
+# I don't think I need to add memorization or
+# saving/loading capabilities here, so this will simply be a model
+# object that the gui can interact with to create and
+# evaluate linear regression models. As stated, all comments and
+# docstrings will be in English for consistency with the rest of the
+# codebase.
 class LinearRegressionModel:
     def __init__(self):
         self.model = LinearRegression()
@@ -37,9 +40,11 @@ class LinearRegressionModel:
 
     def fit_and_evaluate(self):
         try:
-            # In the gui you already can split data, so no need to do it here
+            # In the gui you already can split data,
+            # so no need to do it here
             """Trains the model and evaluates both data splits"""
-            # previous handler only works with series, but because we can do
+            # previous handler only works with series,
+            # but because we can do
             # multiple regression we can't use it.
             if isinstance(self.x_train, pd.Series):
                 self.x_train = self.x_train.to_frame()
