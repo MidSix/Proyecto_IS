@@ -147,6 +147,7 @@ class ResultWindow(QWidget):
             self.model_description_edit.setPlainText(description or "")
 
             # Mostrar contenedores adecuados
+            self.clear_result_window()
             self.placeholder_text.hide()
             self.show_all_containers(True)
             self.main_container.show()
