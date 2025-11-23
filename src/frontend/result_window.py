@@ -57,23 +57,24 @@ class ResultWindow(QWidget):
         self.save_button.clicked.connect(self.save_model_dialog)
 
         # --- LOAD MODEL (new) ---
-        self.load_model_button = QPushButton("Load model")
-        self.load_model_button.clicked.connect(
-            self.load_model_dialog_from_result
-            )
-        self.model_path_label = QLabel("Path:")
+        self.model_path_label = QLabel("Path")
         self.model_path_label.setStyleSheet("color: gray;")
         self.model_path_display = QLineEdit()
         self.model_path_display.setReadOnly(True)
-        path_layout = QHBoxLayout()
-        path_layout.addWidget(self.model_path_label)
-        path_layout.addWidget(self.model_path_display)
+        self.model_path_display.setPlaceholderText("Select a model to load")
+        self.load_model_button = QPushButton("Load model")
+        self.load_model_button.clicked.connect(self.load_model_dialog_from_result)
+        self.load_model_top_layout = QHBoxLayout()
+        self.load_model_top_layout.addWidget(self.model_path_label)
+        self.load_model_top_layout.addWidget(self.model_path_display)
+        self.load_model_top_layout.addWidget(self.load_model_button)
 
         #------------------------containers-----------------------------
         self.main_container = QWidget()
         self.container_model_widget = QWidget()
         self.container_description_widget = QWidget()
         self.container_graph_widget = QWidget()
+        self.container_model_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.container_simple_regression_graph_widget = QWidget()
         self.container_multiple_regression_graph_widget =QWidget()
         #-------------------------Layouts-------------------------------
@@ -85,32 +86,30 @@ class ResultWindow(QWidget):
         self.main_container_layout = QHBoxLayout()
         self.main_layout = QVBoxLayout()
         #-------------------------Set Layouts---------------------------
-        self.container_description_layout.addLayout(path_layout)
-        self.container_description_layout.addWidget(self.load_model_button)
-        self.container_description_layout.addWidget(
-            self.model_description_edit
-            )
+        self.container_description_layout.addWidget(self.model_description_edit)
         self.container_description_layout.addWidget(self.save_button)
-        self.container_description_widget.setLayout(
-            self.container_description_layout
-            )
+        self.container_description_widget.setLayout(self.container_description_layout)
         self.container_model_layout.addWidget(self.summary)
-        self.container_model_layout.addWidget(
-            self.container_description_widget
-            )
+        self.container_model_layout.addWidget(self.container_description_widget)
         self.container_model_layout.setStretch(0, 5)
         self.container_model_layout.setStretch(1, 3)
         self.container_model_widget.setLayout(self.container_model_layout)
-        self.main_container_layout.addWidget(self.container_model_widget,
-                                            alignment=Qt.AlignTop)
-        self.main_container_layout.addWidget(self.container_graph_widget)
+        # Allow the model widget to expand horizontally so path lineedit can stretch across window
+        self.container_model_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
+        self.main_container_layout.addWidget(self.container_model_widget, 0)
+        self.main_container_layout.addWidget(self.container_graph_widget, 1)
         self.main_container.setLayout(self.main_container_layout)
-        self.container_model_widget.setSizePolicy(QSizePolicy.Maximum,
-                                                    QSizePolicy.Maximum)
+
+        # ----------------- TOP PANEL WIDGET -------------
+        self.top_panel_widget = QWidget()
+        self.top_panel_widget.setLayout(self.load_model_top_layout)
+        # Ensure the top panel doesn't get squashed vertically
+        self.top_panel_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # Build the main_layout
+        self.main_layout.addWidget(self.top_panel_widget)
         self.main_layout.addWidget(self.placeholder_text, 1)
         self.main_layout.addWidget(self.main_container)
         self.show_all_containers(True)
-
         self.setLayout(self.main_layout)
 
     # Methods:
