@@ -129,7 +129,7 @@ class SetupWindow(QWidget):
             self.container_splitter_widget,
             self.container_summary_model
             ]
-        def hide_widgets(): #Frontend
+        def hide_widgets():
             for w in containers:
                 w.setVisible(False)
 
@@ -262,10 +262,10 @@ class SetupWindow(QWidget):
             return
         hide_them()
 
-    def selected_item_changed(self, text): #Frontend
+    def selected_item_changed(self, text):
         self.hide_containers()
 
-    def choose_file(self): #Frontend
+    def choose_file(self):
         ruta, _ = QFileDialog.getOpenFileName(
             self, "Select a file", "",
             "Files csv, sqlite, xls (*.csv *.sqlite *.db *.xlsx *.xls);; "
@@ -294,7 +294,7 @@ class SetupWindow(QWidget):
             QMessageBox.critical(self, "Error", f"The file could not "
                                 f"be loaded:\n{str(e)}")
 
-    def load_table(self, df): #Frontend
+    def load_table(self, df):
         self.current_df = df
         self.table.setUpdatesEnabled(False)
         self.table.setModel(PandasModel(df, self))
@@ -302,7 +302,7 @@ class SetupWindow(QWidget):
         self.table.setUpdatesEnabled(True)
 
     # Column selectors
-    def show_column_selectors(self, df): #Frontend
+    def show_column_selectors(self, df):
         columns = df.columns.astype(str).tolist()
         self.input_selector.clear()
         self.output_selector.clear()
@@ -315,7 +315,7 @@ class SetupWindow(QWidget):
         ]:
             w.setVisible(True)
 
-    def confirm_selection(self): #Frontend
+    def confirm_selection(self):
         self.selected_inputs = [
             i.text() for i in self.input_selector.selectedItems()
             ]
@@ -360,7 +360,7 @@ class SetupWindow(QWidget):
                 self.container_preprocess_widget.setVisible(True)
 
     # Missing data detection and preprocessing
-    def handle_missing_data_GUI(self):#Frontend
+    def handle_missing_data_GUI(self):
         #This function only executes when user presses the apply_button
         if self.current_df is None:
             QMessageBox.warning(self, "Error", "No dataset loaded.")
@@ -400,7 +400,7 @@ class SetupWindow(QWidget):
             QMessageBox.critical(self, "Error", f"Error during "
                                                 f"preprocessing:\n{str(e)}")
 
-    def refresh_table_model(self) -> None: #Frontend
+    def refresh_table_model(self) -> None:
         if self.current_df is None:
             return
         table_model = self.table.model()
@@ -410,7 +410,7 @@ class SetupWindow(QWidget):
             self.load_table(self.current_df)
         return None
     # ----------------- TRAIN/TEST -------------------------------------
-    def split_dataframe(self) -> tuple: #Frontend
+    def split_dataframe(self) -> tuple:
         #We assume it's True, if not ResultWindow emit a signal
         #to change this attribute self.was_succesfully_plotted.
         #This is for showing or not the message saying the plot was
@@ -452,7 +452,7 @@ class SetupWindow(QWidget):
         self.summary_model_creation_label.clear()
         self.create_model(msg_summary)
 
-    def create_model(self, msg_summary): # Frontend
+    def create_model(self, msg_summary):
         payload = [(self.train_df, self.test_df), msg_summary]
         self.train_test_df_ready.emit(payload)
 
@@ -483,7 +483,7 @@ class SetupWindow(QWidget):
                                                         f"{msg_summary}")
         self.container_summary_model.show()
 
-    def strategy_box_changed(self, option_selected) -> None: # Frontend
+    def strategy_box_changed(self, option_selected) -> None:
         is_cte = option_selected == "Fill with constant"
         self.constant_name_edit.setVisible(is_cte)
         if is_cte:
@@ -494,6 +494,6 @@ class SetupWindow(QWidget):
 
     #-------------------------Connections:------------------------------
     @pyqtSlot(object)
-    def cant_be_plotted(self, res): # Frontend
+    def cant_be_plotted(self, res):
         self.was_succesfully_plotted = False
         self.plotted_error = res
