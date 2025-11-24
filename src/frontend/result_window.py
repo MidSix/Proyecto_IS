@@ -111,6 +111,7 @@ class ResultWindow(QWidget):
         self.main_layout.addWidget(self.main_container)
         self.show_all_containers(True)
         self.setLayout(self.main_layout)
+        self.container_description_widget.hide()
 
     # Methods:
     def clear_result_window(self):
@@ -141,6 +142,8 @@ class ResultWindow(QWidget):
         try:
             summary_lines, description = load_model_data(model_data)
             self.summary.setText("\n".join(summary_lines))
+
+            self.container_description_widget.show()
 
             # Add the description if it exists
             self.model_description_edit.setPlainText(description or "")
@@ -231,6 +234,7 @@ class ResultWindow(QWidget):
             self.cant_be_plotted.emit(error)
             return
         self.placeholder_text.hide() #self explanatory xd
+        self.container_description_widget.show()
         if len(np.ravel(self.model.coef_)) != 1:
             self.multiple_linear_regression()
             return
