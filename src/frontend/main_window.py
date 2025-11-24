@@ -19,6 +19,8 @@ class MainWindow(QWidget):
         self.setup_window = SetupWindow(self.stacked_widget)
         self.result_window = ResultWindow(self.stacked_widget)
 
+        self.result_window.model_loaded.connect(self.reset_setup_window)
+
         self.stacked_widget.addWidget(self.welcome_window) # índice 0
         self.stacked_widget.addWidget(self.setup_window)  # índice 1
         self.stacked_widget.addWidget(self.result_window) # indice 2
@@ -71,6 +73,9 @@ class MainWindow(QWidget):
         self.stacked_widget.setCurrentIndex(1)
     def change_to_result_window(self):
         self.stacked_widget.setCurrentIndex(2)
+
+    def reset_setup_window(self):
+        self.setup_window.reset_to_initial_state()
 
     #MainWindow as the orchestrator, the one
     #which handle the communication between these two classes.

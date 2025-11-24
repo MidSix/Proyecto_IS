@@ -23,6 +23,7 @@ from PyQt5.QtWidgets import (
 
 class ResultWindow(QWidget):
     cant_be_plotted = pyqtSignal(object)
+    model_loaded = pyqtSignal()
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
@@ -347,6 +348,7 @@ class ResultWindow(QWidget):
         # Update UI
         self.model_path_display.setText(file_path)
         self.load_model_data_GUI(model_data)
+        self.model_loaded.emit()
         QMessageBox.information(self, "Model loaded", "Model loaded"
                                                         "successfully.")
 

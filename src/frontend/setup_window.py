@@ -497,3 +497,36 @@ class SetupWindow(QWidget):
     def cant_be_plotted(self, res):
         self.was_succesfully_plotted = False
         self.plotted_error = res
+
+    def reset_to_initial_state(self):
+        # Reset path
+        self.path_display.clear()
+        # Clear table
+        self.table.setModel(None)
+        self.current_df = None
+        # Reset selections
+        self.selected_inputs = []
+        self.selected_output = None
+        # Clear column selectors
+        self.input_selector.clear()
+        self.output_selector.clear()
+        # Hide all bottom containers
+        self.container_selector_widget.hide()
+        self.container_preprocess_widget.hide()
+        self.container_splitter_widget.hide()
+        self.container_summary_model.hide()
+        # Reset summary panel
+        self.summary_model_creation_label.clear()
+        # Hide constant input
+        self.constant_name_edit.clear()
+        self.constant_name_edit.setVisible(False)
+        # Reset highlight in the table
+        # (only if a model was previously loaded)
+        if hasattr(self.table.model(), "clear_highlight"):
+            try:
+                self.table.model().clear_highlight()
+            except:
+                pass
+        # Reset test/seed boxes
+        self.test_edit.setText("0.2")
+        self.seed_edit.setText("42")
