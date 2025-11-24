@@ -70,6 +70,25 @@ class ResultWindow(QWidget):
         self.load_model_top_layout.addWidget(self.model_path_display)
         self.load_model_top_layout.addWidget(self.load_model_button)
 
+        # ------------------ Prediction Panel -------------------
+        self.prediction_widget = QWidget()
+        self.prediction_layout = QVBoxLayout()
+        self.prediction_title = QLabel("Make a Prediction")
+        self.prediction_title.setStyleSheet("font-size: 16pt; font-weight: bold;")
+        self.prediction_inputs_widget = QWidget()
+        self.prediction_inputs_layout = QVBoxLayout()
+        self.prediction_inputs_widget.setLayout(self.prediction_inputs_layout)
+        self.btn_predict = QPushButton("Realizar Predicción")
+        self.btn_predict.clicked.connect(self.perform_prediction)
+        self.prediction_result = QLabel("")
+        self.prediction_result.setStyleSheet("font-size: 14pt; color: cyan;")
+        self.prediction_layout.addWidget(self.prediction_title)
+        self.prediction_layout.addWidget(self.prediction_inputs_widget)
+        self.prediction_layout.addWidget(self.btn_predict)
+        self.prediction_layout.addWidget(self.prediction_result)
+        self.prediction_widget.setLayout(self.prediction_layout)
+        self.prediction_widget.hide()
+
         #------------------------containers-----------------------------
         self.main_container = QWidget()
         self.container_model_widget = QWidget()
@@ -91,6 +110,7 @@ class ResultWindow(QWidget):
         self.container_description_layout.addWidget(self.save_button)
         self.container_description_widget.setLayout(self.container_description_layout)
         self.container_model_layout.addWidget(self.summary)
+        self.container_model_layout.addWidget(self.prediction_widget)
         self.container_model_layout.addWidget(self.container_description_widget)
         self.container_model_layout.setStretch(0, 5)
         self.container_model_layout.setStretch(1, 3)
@@ -135,21 +155,27 @@ class ResultWindow(QWidget):
                 self.parity_graph.deleteLater()
                 self.parity_toolbar = None
                 self.parity_graph = None
+            self.prediction_widget.hide()
+            self.prediction_result.clear()
             self.model_description_edit.clear()
         except Exception:
                 pass
 
     def load_model_data_GUI(self, model_data: dict):
         try:
+            self.clear_result_window()
+
             summary_lines, description = load_model_data(model_data)
             self.summary.setText("\n".join(summary_lines))
 
+            # Rebuild prediction UI using model_data structure
+            self.model.feature_names = model_data["input_columns"]
+            self.model.target_name = model_data["output_column"]
+            self.build_prediction_inputs()
+            self.prediction_widget.show()
             self.container_description_widget.show()
 
-            # Add the description if it exists
-
             # Show suitable containers
-            self.clear_result_window()
             self.model_description_edit.setPlainText(description or "")
             self.placeholder_text.hide()
             self.show_all_containers(True)
@@ -160,7 +186,6 @@ class ResultWindow(QWidget):
                                  f"show loaded model:\n{str(e)}")
 
     def multiple_linear_regression(self):
-        self.clear_result_window()
         self.summary.setText(self.metrics[2])
         self.show_all_containers(True)
         self.create_parity_figure()
@@ -169,7 +194,6 @@ class ResultWindow(QWidget):
         self.main_container.show()
 
     def simple_linear_regression(self):
-        self.clear_result_window()
         self.summary.setText(self.metrics[2])
         fig = self.model.get_plot_figure()
         self.graph = FigureCanvas(fig)
@@ -221,6 +245,8 @@ class ResultWindow(QWidget):
         #{'n_rows_total': 20640, 'n_train': 16512, 'n_test': 4128,
         #'test_size': 0.2, 'random_seed': 42, 'shuffle': True}
         #that's an example of an output the dict had.
+        
+        self.clear_result_window()
 
         self.train_df = data[0][0]
         self.test_df  = data[0][1]
@@ -235,6 +261,8 @@ class ResultWindow(QWidget):
             self.cant_be_plotted.emit(error)
             return
         self.placeholder_text.hide() #self explanatory xd
+        self.build_prediction_inputs()
+        self.prediction_widget.show()
         self.container_description_widget.show()
         if len(np.ravel(self.model.coef_)) != 1:
             self.multiple_linear_regression()
@@ -351,6 +379,45 @@ class ResultWindow(QWidget):
         self.model_loaded.emit()
         QMessageBox.information(self, "Model loaded", "Model loaded"
                                                         "successfully.")
+
+    def build_prediction_inputs(self):
+        # Clear previous inputs
+        for i in reversed(range(self.prediction_inputs_layout.count())):
+            widget = self.prediction_inputs_layout.itemAt(i).widget()
+            if widget:
+                widget.deleteLater()
+        self.prediction_fields = {}
+        for feature in self.model.feature_names:
+            row = QHBoxLayout()
+            label = QLabel(feature + ":")
+            edit = QLineEdit()
+            edit.setPlaceholderText("Enter numeric value")
+            row.addWidget(label)
+            row.addWidget(edit)
+            container = QWidget()
+            container.setLayout(row)
+            self.prediction_inputs_layout.addWidget(container)
+            self.prediction_fields[feature] = edit
+
+    def perform_prediction(self):
+        try:
+            values = []
+            for feature, edit in self.prediction_fields.items():
+                text = edit.text().strip()
+                if text == "":
+                    QMessageBox.warning(self, "Error", f"Missing value for: {feature}")
+                    return
+                try:
+                    values.append(float(text))
+                except:
+                    QMessageBox.warning(self, "Error", f"Invalid numeric value for: {feature}")
+                    return
+            X = np.array(values).reshape(1, -1)
+            y_pred = self.model.predict(X)
+            pred_val = float(y_pred[0])
+            self.prediction_result.setText(f"Predicted value: {pred_val:.4f}")
+        except Exception as e:
+            QMessageBox.critical(self, "Prediction error", str(e))
 
 if __name__ == "__main__":
     print("prueba")
