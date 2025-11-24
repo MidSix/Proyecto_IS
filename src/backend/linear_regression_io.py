@@ -1,4 +1,7 @@
 import joblib
+import unittest 
+import tempfile 
+import os
 # Don't need to use a class. We don't need to store states.
 # I mean, you could store states but they are meaningless here.
 # A class is only useful when you need to store meaningful
@@ -73,3 +76,18 @@ def save_model_data(file_path: str, model: dict, model_description: str):
         joblib.dump(model_data, file_path)
     except Exception as e:
             raise e
+
+class MockLinearModel:
+    """
+    Clase falsa (Mock) para simular el comportamiento de LinearRegressionModel.
+    Necesaria para que el test de guardado funcione sin depender del archivo de creación.
+    """
+    def __init__(self):
+        self.regression_line = "y = 2.5 * x + 10"
+        self.feature_names = ["Feature_A"]
+        self.target_name = "Target_B"
+        # Simulamos los getters como valores directos
+        self.get_train_R2 = 0.95
+        self.get_train_MSE = 0.05
+        self.get_test_R2 = 0.92
+        self.get_test_MSE = 0.08
