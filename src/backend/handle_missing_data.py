@@ -103,3 +103,32 @@ class TestHandleMissingData(unittest.TestCase):
         
         self.assertEqual(df_res["B"][1], 35.0)
         self.assertIn("filled with column median", msg)
+    def test_strategy_fill_constant(self):
+        # Filling with a specific value, e.g., "0"
+        # Note: Your code expects 'constant' as a string input from GUI, then floats it.
+        constant_val = "99" 
+        df_res, _, msg = handle_missing_data(self.df.copy(), self.cols, "Fill with constant", constant=constant_val)
+        
+        self.assertEqual(df_res["A"][2], 99.0)
+        self.assertEqual(df_res["B"][1], 99.0)
+        self.assertIn("filled with constant 99.0", msg)
+
+    def test_strategy_fill_constant_empty_error(self):
+        # If user selects constant strategy but sends empty string
+        with self.assertRaises(MissingDataError):
+            handle_missing_data(self.df.copy(), self.cols, "Fill with constant", constant="   ")
+
+    def test_unknown_strategy(self):
+        # Just to cover the 'else' branch in your strategy function
+        with self.assertRaises(MissingDataError):
+            handle_missing_data(self.df.copy(), self.cols, "Destroy everything")
+
+    def test_summary_formatting(self):
+        # Check if the summary string is generated correctly
+        _, summary, _ = handle_missing_data(self.df.copy(), self.cols, "Fill with mean")
+        # Should mention Total NaN values: 2
+        self.assertIn("Total NaN values: 2", summary)
+        self.assertIn("A: 1", summary) # Detail part
+
+if __name__ == "__main__":
+    unittest.main()
