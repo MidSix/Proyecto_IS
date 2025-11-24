@@ -147,10 +147,10 @@ class ResultWindow(QWidget):
             self.container_description_widget.show()
 
             # Add the description if it exists
-            self.model_description_edit.setPlainText(description or "")
 
             # Show suitable containers
             self.clear_result_window()
+            self.model_description_edit.setPlainText(description or "")
             self.placeholder_text.hide()
             self.show_all_containers(True)
             self.main_container.show()
