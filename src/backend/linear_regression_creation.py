@@ -102,8 +102,11 @@ class LinearRegressionModel:
         # We will never have multi-output, so flatten:
         for name, coef in zip(self.feature_names, np.atleast_1d(np.ravel(self.coef_))):
             terms.append(f"{coef:.3f}*{name}")
-        # Intercept with explicit sign
-        b0 = float(self.intercept_)
+        
+        # --- Changed here: We access index 0 to extract the scalar ---
+        b0 = float(self.intercept_[0]) 
+        # --------------------------------------------------------------------
+        
         sign = '+' if b0 >= 0 else '-'
         self.regression_line = f"{self.target_name} = {' + '.join(terms)} {sign} {abs(b0):.3f}"
         return self.regression_line
@@ -255,20 +258,23 @@ class LinearRegressionModel:
 
 # ------ Added Unit Tests below ------
 
+# ------ Added Unit Tests below (Following the style of data_loader.py) ------
+
 class TestLinearRegressionModel(unittest.TestCase):
     def setUp(self):
         # Create a deterministic dataset: y = 2*x + 1
-        # This ensures R2 is 1.0 and we know the coefficients exactly.
         data_train = {
-            "feature1": [1, 2, 3, 4],
-            "target":   [3, 5, 7, 9]
+            "target":   [3, 5, 7, 9],    # COLUMNA 0 (Target)
+            "feature1": [1, 2, 3, 4]     # COLUMNA 1 (Feature)
         }
         data_test = {
-            "feature1": [5, 6],
-            "target":   [11, 13]
+            "target":   [11, 13],
+            "feature1": [5, 6]
         }
-        self.df_train = pd.DataFrame(data_train)
-        self.df_test = pd.DataFrame(data_test)
+        # IMPORTANTE: Forzamos el orden de columnas para que coincida con set_df
+        # set_df asume que la columna 0 es el target y las siguientes son features.
+        self.df_train = pd.DataFrame(data_train)[["target", "feature1"]]
+        self.df_test = pd.DataFrame(data_test)[["target", "feature1"]]
         
         self.model = LinearRegressionModel()
 
@@ -282,7 +288,7 @@ class TestLinearRegressionModel(unittest.TestCase):
         self.model.set_df(self.df_train, self.df_test)
         # Check if data was split into X and y internally
         self.assertEqual(self.model.x_train.shape, (4, 1)) # 4 rows, 1 col
-        self.assertEqual(self.model.y_train.shape, (4,))   # 4 rows (Series) or (4,1) depending on pandas version/handling
+        self.assertEqual(self.model.y_train.shape, (4,))   # 4 rows
 
     def test_fit_and_evaluate_success(self):
         # Full flow test
@@ -298,8 +304,9 @@ class TestLinearRegressionModel(unittest.TestCase):
         self.assertTrue(self.model.initialized)
         
         # 3. Check Maths (y = 2x + 1)
-        # Slope (coef) should be 2
-        self.assertAlmostEqual(self.model.coef_[0], 2.0, places=5)
+        # Slope (coef) should be 2. 
+        # CORRECCIÓN: Accedemos a [0][0] porque al ser DataFrame, coef_ es [[2.0]]
+        self.assertAlmostEqual(self.model.coef_[0][0], 2.0, places=5)
         # Intercept should be 1
         self.assertAlmostEqual(self.model.intercept_[0], 1.0, places=5)
         # R2 should be 1.0 (perfect fit)
@@ -332,6 +339,7 @@ class TestLinearRegressionModel(unittest.TestCase):
         self.model.fit_and_evaluate()
         
         # Predict for input 10. Expected: 2*10 + 1 = 21
+        # El nombre de la columna debe coincidir con el usado en fit (feature1)
         input_data = pd.DataFrame({"feature1": [10]})
         prediction = self.model.predict(input_data)
         self.assertAlmostEqual(prediction[0][0], 21.0, places=5)
@@ -348,7 +356,12 @@ class TestLinearRegressionModel(unittest.TestCase):
         self.assertTrue(self.model.can_plot())
         
         # Case 2: 2 features -> Cannot plot (in 2D simple view)
-        df_multi = pd.DataFrame({"f1":[1,2,3], "f2":[1,2,3], "target":[1,2,3]})
+        # Create df with Target + 2 features
+        df_multi = pd.DataFrame({
+            "target": [1,2,3],
+            "f1": [1,2,3], 
+            "f2": [1,2,3]
+        })
         self.model.set_df(df_multi, df_multi)
         self.model.fit_and_evaluate()
         self.assertFalse(self.model.can_plot())
@@ -359,7 +372,6 @@ class TestLinearRegressionModel(unittest.TestCase):
         self.model.fit_and_evaluate()
         fig = self.model.get_plot_figure()
         self.assertIsInstance(fig, Figure)
-
 
 
 # The next condition checks if the script is running directly (standalone) and not as an
