@@ -1,8 +1,5 @@
 import joblib
-import unittest
-import tempfile
-import os
-# Don't need to use a class. We don't need to store states.
+from linear_regression_creation import LinearRegressionModel
 # I mean, you could store states but they are meaningless here.
 # A class is only useful when you need to store meaningful
 # states(attributes) and use methods associated to those states.
@@ -42,7 +39,9 @@ def load_model_data(model_data: dict):
     except Exception as e:
         raise e
 
-def save_model_data(file_path: str, model: dict, model_description: str):
+def save_model_data(file_path: str,
+                    model: LinearRegressionModel,
+                    model_description: str):
     try:
         if not file_path:
             raise ValueError("File path is empty.")

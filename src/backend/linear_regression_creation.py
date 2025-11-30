@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-import unittest
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
  # this dataset is for testing purposes only
@@ -264,4 +263,3 @@ class LinearRegressionModel:
             'train': self.metrics_train,
             'test': self.metrics_test
         }
-
