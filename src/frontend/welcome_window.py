@@ -45,11 +45,14 @@ class WelcomeWindow(QWidget):
             "• Just hit the 'Model Management' button on the top bar<br>"
             "• There you'll find your parity graph and simple regression graph<br>"
             "  (if simple otherwise you'll only find the parity graph)<br>"
-            "• consult usefull metrics such as R² and MSE for both train and test<br><br>"
-            "<b>7. Save your model</b><br>"
+            "• Consult usefull metrics such as R² and MSE for both train and test<br><br>"
+            "<b>7. Make a prediction</b><br>"
+            "• Use the 'make a prediction' section by assigning different values<br>"
+            "  ​​to the input variables to see the model's output after the prediction.<br><br>"
+            "<b>8. Save your model</b><br>"
             "• You're able to add a description before saving your model<br>"
             "• To save your model just press the 'save model button'<br><br>"
-            "<b>8. Load your model</b><br>"
+            "<b>9. Load your model</b><br>"
             "• Just hit the 'load model' button and select a previosly saved model<br>"
         )
 
