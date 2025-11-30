@@ -473,11 +473,11 @@ class SetupWindow(QWidget):
         else:
             QMessageBox.information(self, "Model sucessfully created",
                                     "Simple regression succesfully done\n\n"
-                                    "plotted on Result Window\n\n")
+                                    "plotted on Model Management\n\n")
             self.summary_model_creation_label.setText("Simple regression "
                                                       "succesfully done\n"
-                                                      "plotted on"
-                                                      "Result Window\n\n"
+                                                      "plotted on "
+                                                      "Model Management\n\n"
                                                         f"{msg_summary}")
         self.container_summary_model.show()
 
