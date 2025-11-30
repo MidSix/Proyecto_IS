@@ -1,13 +1,9 @@
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QFileDialog, QTableView, QMessageBox, QHeaderView, QListWidget,
-    QAbstractItemView, QHBoxLayout, QComboBox, QSizePolicy
+    QWidget, QLabel, QVBoxLayout
 )
 
 from PyQt5.QtCore import (
-    Qt,
-    pyqtSlot,
-    pyqtSignal
+    Qt
 )
 class WelcomeWindow(QWidget):
     def __init__(self, stacked_widget):
@@ -37,7 +33,7 @@ class WelcomeWindow(QWidget):
             "<b>3. Confirm your selection</b><br>"
             "• Just press the 'confirm selection button'<br><br>"
             "<b>4. If you selected columns with NaN values</b><br>"
-            "• Press the dropdown and select one of the four<br>"
+            "• Press the dropdown and select one of the four options<br>"
             "• Then press 'Apply preprocessing to handle your missing data'<br><br>"
             "<b>5. Split data into train and test sets</b><br>"
             "• Fill both input fields <br>"

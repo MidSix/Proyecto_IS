@@ -25,6 +25,7 @@ from PyQt5.QtWidgets import (
 
 class SetupWindow(QWidget):
     #Signals to communicate with ResultWindow
+    #Signals that are sent
     train_test_df_ready = pyqtSignal(object)
     another_file_opened = pyqtSignal()
     def __init__(self, stacked_widget):
@@ -190,8 +191,6 @@ class SetupWindow(QWidget):
                                       alignment=Qt.AlignLeft)
         bottom_panel_layout.addWidget(self.container_splitter_widget,
                                       alignment=Qt.AlignLeft)
-        # IMPORTANT: Add the model container right
-        # AFTER the splitter container
         bottom_panel_layout.addWidget(self.container_summary_model,
                                       alignment=Qt.AlignLeft)
 
@@ -280,14 +279,13 @@ class SetupWindow(QWidget):
             if df is None:
                 QMessageBox.warning(self, "Warning", error_message)
                 return
-
             self.load_table(df)
-            QMessageBox.information(self, "Success", "File "
-                                            "loaded successfully.")
-            # Ocultar contenedores al abrir nuevo archivo
             self.hide_containers()
             self.show_column_selectors(df)
             self.container_selector_widget.setVisible(True)
+            QMessageBox.information(self, "Success", "File "
+                                            "loaded successfully.")
+            # Ocultar contenedores al abrir nuevo archivo
             self.another_file_opened.emit()
 
         except Exception as e:
@@ -493,10 +491,12 @@ class SetupWindow(QWidget):
         return None
 
     #-------------------------Connections:------------------------------
+    #Signals that are received
     @pyqtSlot(object)
     def cant_be_plotted(self, res):
         self.was_succesfully_plotted = False
         self.plotted_error = res
+    #-------------------------------------------------------------------
 
     def reset_to_initial_state(self):
         # Reset path
@@ -525,7 +525,7 @@ class SetupWindow(QWidget):
         if hasattr(self.table.model(), "clear_highlight"):
             try:
                 self.table.model().clear_highlight()
-            except:
+            except Exception:
                 pass
         # Reset test/seed boxes
         self.test_edit.setText("0.2")

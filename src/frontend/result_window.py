@@ -18,7 +18,8 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtWidgets import (
     QWidget, QLabel, QLineEdit, QPushButton, QVBoxLayout,
-    QFileDialog, QMessageBox, QHBoxLayout, QSizePolicy, QTextEdit
+    QFileDialog, QMessageBox, QHBoxLayout, QSizePolicy, QTextEdit,
+    QScrollArea
 )
 
 class ResultWindow(QWidget):
@@ -35,16 +36,17 @@ class ResultWindow(QWidget):
         #------------------------widgets--------------------------------
         self.placeholder_text = QLabel(
         "Remember that to access this feature\n"
-        "you first need to load the data,\n"
-        "preprocess if needed and split\n"
-        "the data into training and test sets.\n"
+        "you first need to load the model\n"
+        "or load the data. And then preprocess\n"
+        "if needed and split the data\n"
+        "into training and test sets.\n"
         )
         self.placeholder_text.setAlignment(Qt.AlignCenter)
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
-        self.summary = QLabel()
-        self.summary.setAlignment(Qt.AlignLeft)
-        #Just some QSS to make the self.summary looks better.
-        self.summary.setStyleSheet("""
+        self.summary_model_widget = QLabel()
+        self.summary_model_widget.setAlignment(Qt.AlignLeft)
+        #Just some QSS to make the self.summary_model_widget looks better.
+        self.summary_model_widget.setStyleSheet("""
                                     QLabel {
                                     font-family: 'Consolas';
                                     font-size: 14pt;
@@ -64,33 +66,34 @@ class ResultWindow(QWidget):
         self.model_path_display.setReadOnly(True)
         self.model_path_display.setPlaceholderText("Select a model to load")
         self.load_model_button = QPushButton("Load model")
-        self.load_model_button.clicked.connect(self.load_model_dialog_from_result)
+        self.load_model_button.clicked.connect(self.load_model_data_dialog)
         self.load_model_top_layout = QHBoxLayout()
         self.load_model_top_layout.addWidget(self.model_path_label)
         self.load_model_top_layout.addWidget(self.model_path_display)
         self.load_model_top_layout.addWidget(self.load_model_button)
 
         # ------------------ Prediction Panel -------------------
-        self.prediction_widget = QWidget()
+        self.container_prediction_widget = QWidget()
         self.prediction_layout = QVBoxLayout()
         self.prediction_title = QLabel("Make a Prediction")
         self.prediction_title.setStyleSheet("font-size: 16pt; font-weight: bold;")
         self.prediction_inputs_widget = QWidget()
         self.prediction_inputs_layout = QVBoxLayout()
         self.prediction_inputs_widget.setLayout(self.prediction_inputs_layout)
-        self.btn_predict = QPushButton("Realizar Predicción")
+        self.btn_predict = QPushButton("Make prediction")
         self.btn_predict.clicked.connect(self.perform_prediction)
         self.prediction_result = QLabel("")
         self.prediction_result.setStyleSheet("font-size: 14pt; color: cyan;")
         self.prediction_layout.addWidget(self.prediction_title)
         self.prediction_layout.addWidget(self.prediction_inputs_widget)
-        self.prediction_layout.addWidget(self.btn_predict)
+        self.prediction_layout.addWidget(self.btn_predict, alignment=Qt.AlignCenter)
+        self.btn_predict.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.prediction_layout.addWidget(self.prediction_result)
-        self.prediction_widget.setLayout(self.prediction_layout)
-        self.prediction_widget.hide()
+        self.container_prediction_widget.setLayout(self.prediction_layout)
+        self.container_prediction_widget.hide()
 
         #------------------------containers-----------------------------
-        self.main_container = QWidget()
+        self.container_scroll_area = QWidget()
         self.container_model_widget = QWidget()
         self.container_description_widget = QWidget()
         self.container_graph_widget = QWidget()
@@ -103,36 +106,47 @@ class ResultWindow(QWidget):
         self.container_graph_layout = QVBoxLayout()
         self.container_simple_regression_graph_layout = QHBoxLayout()
         self.container_multiple_regression_graph_layout = QHBoxLayout()
-        self.main_container_layout = QHBoxLayout()
+        self.container_scroll_area_layout = QHBoxLayout()
+        self.container_of_scroll_area_layout = QVBoxLayout()
         self.main_layout = QVBoxLayout()
         #-------------------------Set Layouts---------------------------
+        #-------------------container_scroll_area_layout----------------
         self.container_description_layout.addWidget(self.model_description_edit)
-        self.container_description_layout.addWidget(self.save_button)
+        self.container_description_layout.addWidget(self.save_button, alignment=Qt.AlignCenter)
+        self.save_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
         self.container_description_widget.setLayout(self.container_description_layout)
-        self.container_model_layout.addWidget(self.summary)
-        self.container_model_layout.addWidget(self.prediction_widget)
+        self.container_model_layout.addWidget(self.summary_model_widget)
+        self.container_model_layout.addWidget(self.container_prediction_widget)
         self.container_model_layout.addWidget(self.container_description_widget)
         self.container_model_layout.setStretch(0, 5)
         self.container_model_layout.setStretch(1, 3)
         self.container_model_widget.setLayout(self.container_model_layout)
         # Allow the model widget to expand horizontally so path lineedit can stretch across window
         self.container_model_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.main_container_layout.addWidget(self.container_model_widget, 0)
-        self.main_container_layout.addWidget(self.container_graph_widget, 1)
-        self.main_container.setLayout(self.main_container_layout)
+        self.container_scroll_area_layout.addWidget(self.container_model_widget, 0)
+        self.container_scroll_area_layout.addWidget(self.container_graph_widget, 1)
+        self.container_scroll_area.setLayout(self.container_scroll_area_layout)
+        # ---- Wrap container_scroll_area in scroll area for vertical scrolling
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setWidget(self.container_scroll_area)
 
         # ----------------- TOP PANEL WIDGET -------------
         self.top_panel_widget = QWidget()
         self.top_panel_widget.setLayout(self.load_model_top_layout)
         # Ensure the top panel doesn't get squashed vertically
         self.top_panel_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # ----------------- MAIN LAYOUT -------------
         # Build the main_layout
         self.main_layout.addWidget(self.top_panel_widget)
         self.main_layout.addWidget(self.placeholder_text, 1)
-        self.main_layout.addWidget(self.main_container)
+        self.main_layout.addWidget(self.scroll_area)
         self.show_all_containers(True)
         self.setLayout(self.main_layout)
         self.container_description_widget.hide()
+        self.scroll_area.hide()
 
     # Methods:
     def clear_result_window(self):
@@ -155,7 +169,7 @@ class ResultWindow(QWidget):
                 self.parity_graph.deleteLater()
                 self.parity_toolbar = None
                 self.parity_graph = None
-            self.prediction_widget.hide()
+            self.container_prediction_widget.hide()
             self.prediction_result.clear()
             self.model_description_edit.clear()
         except Exception:
@@ -164,37 +178,36 @@ class ResultWindow(QWidget):
     def load_model_data_GUI(self, model_data: dict):
         try:
             self.clear_result_window()
-
+            self.placeholder_text.hide()
             summary_lines, description = load_model_data(model_data)
-            self.summary.setText("\n".join(summary_lines))
+            self.summary_model_widget.setText("\n".join(summary_lines))
 
             # Rebuild prediction UI using model_data structure
             self.model.feature_names = model_data["input_columns"]
             self.model.target_name = model_data["output_column"]
             self.build_prediction_inputs()
-            self.prediction_widget.show()
+            self.container_prediction_widget.show()
             self.container_description_widget.show()
 
             # Show suitable containers
             self.model_description_edit.setPlainText(description or "")
-            self.placeholder_text.hide()
             self.show_all_containers(True)
-            self.main_container.show()
+            self.scroll_area.show()
 
         except Exception as e:
             QMessageBox.critical(self, "Error", f"Failed to"
                                  f"show loaded model:\n{str(e)}")
 
     def multiple_linear_regression(self):
-        self.summary.setText(self.metrics[2])
+        self.summary_model_widget.setText(self.metrics[2])
         self.show_all_containers(True)
         self.create_parity_figure()
         self.container_graph_widget.setLayout(self.container_graph_layout)
         self.container_multiple_regression_graph_widget.setVisible(True)
-        self.main_container.show()
+        self.scroll_area.show()
 
     def simple_linear_regression(self):
-        self.summary.setText(self.metrics[2])
+        self.summary_model_widget.setText(self.metrics[2])
         fig = self.model.get_plot_figure()
         self.graph = FigureCanvas(fig)
         self.toolbar = NavigationToolbar(self.graph, self)
@@ -214,13 +227,14 @@ class ResultWindow(QWidget):
         self.show_all_containers(True)
         self.container_simple_regression_graph_widget.setVisible(True)
         self.container_multiple_regression_graph_widget.setVisible(True)
-        self.main_container.show()
+        self.scroll_area.show()
     #---------------------------Connections-----------------------------
     @pyqtSlot(object)
     def another_file_opened(self):
         self.clear_result_window()
-        self.summary.hide()
-        self.main_container.hide()
+        self.model_path_display.clear()
+        self.summary_model_widget.hide()
+        self.scroll_area.hide()
         self.placeholder_text.show()
     @pyqtSlot(object)
     def train_test_df_res(self, data:list):
@@ -245,7 +259,7 @@ class ResultWindow(QWidget):
         #{'n_rows_total': 20640, 'n_train': 16512, 'n_test': 4128,
         #'test_size': 0.2, 'random_seed': 42, 'shuffle': True}
         #that's an example of an output the dict had.
-        
+
         self.clear_result_window()
 
         self.train_df = data[0][0]
@@ -262,7 +276,7 @@ class ResultWindow(QWidget):
             return
         self.placeholder_text.hide() #self explanatory xd
         self.build_prediction_inputs()
-        self.prediction_widget.show()
+        self.container_prediction_widget.show()
         self.container_description_widget.show()
         if len(np.ravel(self.model.coef_)) != 1:
             self.multiple_linear_regression()
@@ -306,11 +320,11 @@ class ResultWindow(QWidget):
         if not self.model_description.strip():
             # Give notice but continue with the creation of the model
             QMessageBox.information(self, "Info", "No model description"
-                                                    "was added.\n"
+                                                    " was added.\n"
             "The model will be created without a description.")
         else:
             QMessageBox.information(self, "Info", "Model description"
-                                                    "captured.\n"
+                                                    " captured.\n"
             "It will be attached to the model.")
         try:
             # Dialogue to choose a route
@@ -338,15 +352,15 @@ class ResultWindow(QWidget):
         widgets = [
             self.container_model_widget,
             self.container_description_widget,
-            self.summary,
+            self.summary_model_widget,
             self.container_graph_widget,
             self.model_description_edit,
-            self.main_container
+            self.scroll_area
             ]
         for widget in widgets:
             widget.setVisible(value)
 
-    def load_model_dialog_from_result(self):
+    def load_model_data_dialog(self):
         """Load model but from ResultWindow (Model Management tab)."""
         file_path, _ = QFileDialog.getOpenFileName(
             self,
@@ -361,7 +375,7 @@ class ResultWindow(QWidget):
             model_data = joblib.load(file_path)
         except Exception as e:
             QMessageBox.critical(self, "Error loading", f"Could not load"
-                                                    f"model file:\n{str(e)}")
+                                                    f" model file:\n{str(e)}")
             return
 
         # Validate model structure
@@ -370,22 +384,35 @@ class ResultWindow(QWidget):
         if (not isinstance(model_data, dict) or not
             required.issubset(model_data.keys())):
             QMessageBox.critical(self, "Invalid model", "The selected file"
-                                        "does not contain a valid model.")
+                                        " does not contain a valid model.")
             return
 
-        # Update UI
+        # Check for model object in loaded data
+        if "model" not in model_data or model_data["model"] is None:
+            QMessageBox.critical(
+                self,
+                "Invalid model object",
+                "The selected file does not contain a valid trained model object. "
+                "It was likely created with an older version of the application."
+            )
+            return
+
+        # Set self.model to loaded model object
+        self.model = model_data["model"]
         self.model_path_display.setText(file_path)
         self.load_model_data_GUI(model_data)
         self.model_loaded.emit()
-        QMessageBox.information(self, "Model loaded", "Model loaded"
+        QMessageBox.information(self, "Model loaded", "Model loaded\n"
                                                         "successfully.")
 
     def build_prediction_inputs(self):
         # Clear previous inputs
         for i in reversed(range(self.prediction_inputs_layout.count())):
-            widget = self.prediction_inputs_layout.itemAt(i).widget()
+            item = self.prediction_inputs_layout.takeAt(i)
+            widget = item.widget()
             if widget:
                 widget.deleteLater()
+            del item
         self.prediction_fields = {}
         for feature in self.model.feature_names:
             row = QHBoxLayout()
@@ -409,15 +436,12 @@ class ResultWindow(QWidget):
                     return
                 try:
                     values.append(float(text))
-                except:
+                except Exception:
                     QMessageBox.warning(self, "Error", f"Invalid numeric value for: {feature}")
                     return
             X = np.array(values).reshape(1, -1)
             y_pred = self.model.predict(X)
             pred_val = float(y_pred[0])
-            self.prediction_result.setText(f"Predicted value: {pred_val:.4f}")
+            self.prediction_result.setText(f"{self.model.target_name}: {pred_val:.4f}")
         except Exception as e:
             QMessageBox.critical(self, "Prediction error", str(e))
-
-if __name__ == "__main__":
-    print("prueba")
