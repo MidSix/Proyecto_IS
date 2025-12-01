@@ -1,5 +1,5 @@
 import joblib
-from linear_regression_creation import LinearRegressionModel
+from backend.linear_regression_creation import LinearRegressionModel
 # I mean, you could store states but they are meaningless here.
 # A class is only useful when you need to store meaningful
 # states(attributes) and use methods associated to those states.
