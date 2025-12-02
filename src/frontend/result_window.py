@@ -64,7 +64,7 @@ class ResultWindow(QWidget):
         self.model_path_label.setStyleSheet("color: gray;")
         self.model_path_display = QLineEdit()
         self.model_path_display.setReadOnly(True)
-        self.model_path_display.setPlaceholderText("Select a model to load")
+        self.model_path_display.setPlaceholderText("Select a model file to load")
         self.load_model_button = QPushButton("Load model")
         self.load_model_button.clicked.connect(self.load_model_data_dialog)
         self.load_model_top_layout = QHBoxLayout()

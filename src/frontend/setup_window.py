@@ -38,7 +38,7 @@ class SetupWindow(QWidget):
         # ----------------- Top setup ----------------------------------
         self.label = QLabel("Path")
         self.path_display = QLineEdit()
-        self.path_display.setPlaceholderText("Select a file to load the data")
+        self.path_display.setPlaceholderText("Select a dataset file to load")
         self.path_display.setReadOnly(True)
         self.btn_open_file = QPushButton("Open File")
         self.btn_open_file.clicked.connect(self.choose_file)
