@@ -208,3 +208,4 @@ __marimo__/
 
 #Our ignore things
 data/
+.DS_Store
