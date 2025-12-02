@@ -3,7 +3,7 @@ import tempfile
 import os
 import joblib
 
-from backend.linear_regression_io import (
+from src.backend.linear_regression_io import (
     load_model_data,
     save_model_data
 )

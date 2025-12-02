@@ -3,9 +3,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
  # this dataset is for testing purposes only
-import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
-from typing import Optional
 
 
 # This model is to be highly integrated with the gui.

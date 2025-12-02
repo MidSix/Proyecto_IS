@@ -1,16 +1,16 @@
-from backend.data_loader import (
+from src.backend.data_loader import (
     DataModule
 )
 
-from backend.data_split import (
+from src.backend.data_split import (
     DataSplitter,
     DataSplitError
 )
-from backend.handle_missing_data import (
+from src.backend.handle_missing_data import (
     handle_missing_data,
     MissingDataError
 )
-from frontend.table_model import PandasModel
+from src.frontend.table_model import PandasModel
 from PyQt5.QtCore import (
     Qt,
     pyqtSlot,

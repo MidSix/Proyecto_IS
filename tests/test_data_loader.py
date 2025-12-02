@@ -4,7 +4,7 @@ import unittest  # For automatic testing purposes
 import tempfile  # Create temporary files for testing without using
                  # actual files on disk
 
-from backend.data_loader import DataModule
+from src.backend.data_loader import DataModule
 
 class TestDataModule(unittest.TestCase):
     def setUp(self):

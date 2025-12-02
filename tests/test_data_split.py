@@ -1,7 +1,7 @@
 import unittest
 import pandas as pd
 
-from backend.data_split import DataSplitter, DataSplitError, MIN_ROWS
+from src.backend.data_split import DataSplitter, DataSplitError, MIN_ROWS
 
 
 class TestDataSplitter(unittest.TestCase):

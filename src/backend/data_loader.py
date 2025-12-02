@@ -2,9 +2,6 @@ import sqlite3
 import pandas as pd
 import os  # Handle file paths and extensions that may vary
            # by OS (Linux, Windows, macOS)
-import unittest  # For automatic testing purposes
-import tempfile  # Create temporary files for testing without using
-                 # actual files on disk
 
 # I decided to use pandas for the general dataframe handling, because
 # it provides a matrix-like structure and easy data manipulation.

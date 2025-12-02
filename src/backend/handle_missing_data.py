@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np # Needed to create NaN values for testing
 # Don't need to use a class. We don't need to store states.
 # I mean, you could store states but they are meaningless here.
 # A class is only useful when you need to store meaningful states(attributes)

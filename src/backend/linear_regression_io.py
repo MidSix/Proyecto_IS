@@ -1,5 +1,5 @@
 import joblib
-from backend.linear_regression_creation import LinearRegressionModel
+from src.backend.linear_regression_creation import LinearRegressionModel
 # I mean, you could store states but they are meaningless here.
 # A class is only useful when you need to store meaningful
 # states(attributes) and use methods associated to those states.
@@ -10,7 +10,6 @@ def load_model_data(model_data: dict):
     returns a summary and description.
     """
     try:
-
         formula = model_data.get("formula", "")
         input_cols = model_data.get("input_columns", [])
         output_col = model_data.get("output_column", "")

@@ -1,7 +1,6 @@
 from typing import Tuple, Optional, Dict
 import pandas as pd
 from sklearn.model_selection import train_test_split
-import numpy as np
 # Minimum number of rows required to perform a split
 # global variable
 MIN_ROWS = 5
@@ -34,7 +33,7 @@ class DataSplitter:
         n_rows = len(df)
 
         if n_rows < MIN_ROWS:
-            raise DataSplitError(f"Not enough rows to split" \
+            raise DataSplitError(f"Not enough rows to split\n"
                                 f"(it has {n_rows}, minimum {MIN_ROWS}).")
 
         if not (0.0 < test_size < 1.0):

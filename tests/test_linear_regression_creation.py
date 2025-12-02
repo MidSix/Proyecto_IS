@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 from matplotlib.figure import Figure
 
-from backend.linear_regression_creation import LinearRegressionModel
+from src.backend.linear_regression_creation import LinearRegressionModel
 
 class TestLinearRegressionModel(unittest.TestCase):
     def setUp(self):
