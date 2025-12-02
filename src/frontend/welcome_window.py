@@ -9,7 +9,7 @@ class WelcomeWindow(QWidget):
     def __init__(self, stacked_widget):
         super().__init__()
         self.stacked_widget = stacked_widget
-        self.setWindowTitle("?")
+        self.setWindowTitle("Quick Guide")
         self.layout = QVBoxLayout()
 #----------------------------set_label----------------------------------
         self.welcome_message = QLabel()

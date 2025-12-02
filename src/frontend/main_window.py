@@ -12,7 +12,10 @@ from PyQt5.QtWidgets import (
 class MainWindow(QWidget):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Linear Regression - Quick Start")
+        self.quick_guide = "Quick Guide"
+        self.data_management = "Data Management"
+        self.model_management = "Model Management"
+        self.setWindowTitle(f"Linear Regression - {self.quick_guide}")
         #Stack windows--------------------------------------------------
         self.stacked_widget = QStackedWidget()
         self.welcome_window = WelcomeWindow(self.stacked_widget)
@@ -29,15 +32,15 @@ class MainWindow(QWidget):
         self.result_window.cant_be_plotted.connect(self.cant_be_plotted)
         self.result_window.model_loaded.connect(self.reset_setup_window)
         #---------------------------------------------------------------
-        self.welcome_window_button = QPushButton("Quick Start")
+        self.welcome_window_button = QPushButton(self.quick_guide)
         self.welcome_window_button.clicked.connect(
             self.change_to_welcome_window
             )
-        self.setup_window_button = QPushButton("Data Management")
+        self.setup_window_button = QPushButton(self.data_management)
         self.setup_window_button.clicked.connect(
             self.change_to_setup_window
             )
-        self.result_window_button = QPushButton("Model Management")
+        self.result_window_button = QPushButton(self.model_management)
         self.result_window_button.clicked.connect(
             self.change_to_result_window
             )
@@ -96,15 +99,15 @@ class MainWindow(QWidget):
         self.welcome_window_button.setChecked(True)
     #Methods:
     def change_to_welcome_window(self):
-        self.setWindowTitle("Linear Regression - Quick Start")
+        self.setWindowTitle(f"Linear Regression - {self.quick_guide}")
         self.stacked_widget.setCurrentIndex(0)
         self.welcome_window_button.setChecked(True)
     def change_to_setup_window(self):
-        self.setWindowTitle("Linear Regression - Data Management")
+        self.setWindowTitle(f"Linear Regression - {self.data_management}")
         self.stacked_widget.setCurrentIndex(1)
         self.setup_window_button.setChecked(True)
     def change_to_result_window(self):
-        self.setWindowTitle("Linear Regression - Model Management")
+        self.setWindowTitle(f"Linear Regression - {self.model_management}")
         self.stacked_widget.setCurrentIndex(2)
         self.result_window_button.setChecked(True)
 
