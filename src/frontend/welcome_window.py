@@ -1,5 +1,5 @@
 from PyQt5.QtWidgets import (
-    QWidget, QLabel, QVBoxLayout
+    QWidget, QLabel, QVBoxLayout, QScrollArea, QSizePolicy
 )
 
 from PyQt5.QtCore import (
@@ -20,7 +20,6 @@ class WelcomeWindow(QWidget):
                                 color: #E0E0E0;
                                 }
                                 """)
-        self.layout.addWidget(self.welcome_message, alignment=Qt.AlignCenter)
         #this is just some HTML to format the welcome message
         self.welcome_message.setText(
             "<h1><b>Welcome to the Linear Regression App</b></h1><br>"
@@ -55,5 +54,28 @@ class WelcomeWindow(QWidget):
             "<b>9. Load your model</b><br>"
             "• Just hit the 'load model' button and select a previosly saved model<br>"
         )
+        # Label behavior
+        self.welcome_message.setSizePolicy(
+            QSizePolicy.Preferred,
+            QSizePolicy.Expanding
+        )
+        self.welcome_message.setAlignment(Qt.AlignLeft)
+        # ---------------------------- Container ----------------------------
+        self.container_label_widget = QWidget()
+        self.container_label_layout = QVBoxLayout(self.container_label_widget)
+        self.container_label_layout.addWidget(
+            self.welcome_message,
+            alignment=Qt.AlignCenter
+            )
+
+        # ---------------------------- Scroll Area ----------------------------
+        self.scroll_area = QScrollArea()
+        self.scroll_area.setWidgetResizable(True)
+        self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
+        self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.scroll_area.setWidget(self.container_label_widget)
+
+        # Add scroll area to main layout
+        self.layout.addWidget(self.scroll_area)
 
         self.setLayout(self.layout)
