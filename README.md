@@ -85,8 +85,34 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
 
 ---
 ### **6. See your linear regression**
-- Hit the **"Model Management"** button on the top bar  
+- Hit the **"Model Management"** button on the top bar
+  <img width="789" height="75" alt="11" src="https://github.com/user-attachments/assets/9d995ef6-e2ed-47c9-ab6c-2a878bc7230b" />
+
 - There you'll find your **parity graph** and **simple regression graph**  
   (only simple regression shows the second graph)  
-- Consult useful metrics such as **R²** and **MSE** for both train and test  
+- Consult useful metrics such as **R²** and **MSE** for both train and test
+  <img width="1095" height="609" alt="12" src="https://github.com/user-attachments/assets/10cf6572-2758-406b-9e93-7875b678f532" />
 
+---
+
+### **7. Make a prediction**
+- Use the **"Make a Prediction"** section by assigning values  
+  to the input values and pressing **Make prediction** button
+  this will show you the predicted value for the given input values
+
+  <img width="627" height="177" alt="13" src="https://github.com/user-attachments/assets/d985e254-1e64-408f-b398-ab16b0e80198" />
+
+---
+
+### **8. Save your model**
+- You may add a description before saving your model  
+- To save it, press the **"Save Model"** button and set a directory to save it (you save the model, not the graph/s)
+  <img width="1083" height="595" alt="14" src="https://github.com/user-attachments/assets/bec72fdf-675a-47ba-a6c5-a5871464b304" />
+
+---
+
+### **9. Load your model**
+- Hit the **"Load Model"** button and select a previously saved model
+- This will load the model on Model Management section.
+
+### Thanks for reading we hope that this guide was helpful. Enjoy the program.
