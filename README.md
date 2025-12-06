@@ -91,7 +91,8 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
 - There you'll find your **parity graph** and **simple regression graph**  
   (only simple regression shows the second graph)  
 - Consult useful metrics such as **R²** and **MSE** for both train and test
-  <img width="1095" height="609" alt="12" src="https://github.com/user-attachments/assets/10cf6572-2758-406b-9e93-7875b678f532" />
+  <img width="1095" height="609" alt="12" src="https://github.com/user-attachments/assets/c4b04e3b-1fe4-4ae8-9f01-0e0f89b634e7" />
+
 
 ---
 
@@ -100,7 +101,8 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
   to the input values and pressing **Make prediction** button
   this will show you the predicted value for the given input values
 
-  <img width="627" height="177" alt="13" src="https://github.com/user-attachments/assets/d985e254-1e64-408f-b398-ab16b0e80198" />
+  <img width="627" height="177" alt="13" src="https://github.com/user-attachments/assets/eb3631ec-e289-42bc-95b7-2404abbd16a0" />
+
 
 ---
 
