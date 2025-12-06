@@ -35,7 +35,58 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
 # User guide
 ### **1. Load data**
 - Use the button **"Open File"** in Data Management to open a file  
-<img width="570" height="113" alt="1" src="https://github.com/user-attachments/assets/8eb39cab-6946-4742-8861-9150529efa15" />
+  <img width="570" height="113" alt="1" src="https://github.com/user-attachments/assets/8eb39cab-6946-4742-8861-9150529efa15" />
 
 - Select between **CSV**, **Excel**, and **MySQL** data formats to load
-- 
+  <img width="766" height="318" alt="2" src="https://github.com/user-attachments/assets/4c0f1d88-6fd6-486d-bdcb-672464debeed" />
+
+---
+
+### **2. Select features and target**
+- Select input (**features**) columns  
+- Select output (**target**) column  
+  <img width="638" height="557" alt="3" src="https://github.com/user-attachments/assets/9529d92f-33b7-4e0d-93f1-8c91a3ad6ec7" />
+
+---
+
+### **3. Confirm your selection**
+- Press the **"Confirm Selection"** button  
+  <img width="631" height="202" alt="4" src="https://github.com/user-attachments/assets/e4af1e44-56c6-4d17-a999-2b44d915717c" />
+
+---
+
+### **4. If you selected columns with NaN values**
+- A new option to the right will appear. Open the dropdown and select one of the four options
+   <img width="632" height="199" alt="5" src="https://github.com/user-attachments/assets/48602c8d-c099-4720-82f3-ffed4a452915" />
+
+
+- Then press **"Apply preprocessing"** to handle your missing data"
+  <img width="629" height="200" alt="6" src="https://github.com/user-attachments/assets/65e0996d-4af7-4a71-a1e4-aa7fb539b607" />
+
+---
+
+### **5. Split data into train and test sets**
+- Fill both input fields
+
+  <img width="788" height="197" alt="7" src="https://github.com/user-attachments/assets/d3595678-7777-49fc-81a7-e9b225488141" />
+
+
+- Use the **"Create Model"** button to split your data  
+  and create your linear regression model
+  <img width="788" height="197" alt="8" src="https://github.com/user-attachments/assets/c5ae4e60-acf7-4751-988f-fb24420f80c6" />
+
+- An informative pop-up message will apper once you press **"Create Model"** button
+
+  <img width="227" height="181" alt="9" src="https://github.com/user-attachments/assets/2507fbeb-6c33-4daf-a31a-ca10681a4a29" />
+
+- A summary message will appear next to where  
+  you pressed **"Create Model"**, containing a summary of your model  
+  <img width="764" height="183" alt="10" src="https://github.com/user-attachments/assets/34c7035a-ebf1-4ef6-a5fe-10a551a59de5" />
+
+---
+### **6. See your linear regression**
+- Hit the **"Model Management"** button on the top bar  
+- There you'll find your **parity graph** and **simple regression graph**  
+  (only simple regression shows the second graph)  
+- Consult useful metrics such as **R²** and **MSE** for both train and test  
+
