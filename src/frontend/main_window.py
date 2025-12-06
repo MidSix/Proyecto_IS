@@ -10,7 +10,50 @@ from PyQt5.QtWidgets import (
     QButtonGroup
 )
 class MainWindow(QWidget):
-    def __init__(self):
+    """Main application window with tabbed interface.
+
+    This class orchestrates the main user interface, managing three
+    stacked windows: welcome, data setup, and results. It coordinates
+    communication between windows via PyQt5 signals and slots.
+
+    Attributes
+    ----------
+    quick_guide : str
+        Label for the welcome window tab.
+    data_management : str
+        Label for the data setup window tab.
+    model_management : str
+        Label for the results window tab.
+    stacked_widget : QStackedWidget
+        Container for switching between windows.
+    welcome_window : WelcomeWindow
+        Welcome/guide window.
+    setup_window : SetupWindow
+        Data upload and split window.
+    result_window : ResultWindow
+        Model training and results window.
+    nav_group : QButtonGroup
+        Manages exclusive button selection.
+
+    Methods
+    -------
+    change_to_welcome_window()
+        Switch to the welcome window.
+    change_to_setup_window()
+        Switch to the data setup window.
+    change_to_result_window()
+        Switch to the results window.
+    another_file_opened()
+        Signal handler for file open events.
+    train_test_df_ready(res)
+        Signal handler for train-test split completion.
+    cant_be_plotted(res)
+        Signal handler for plot unavailability.
+    reset_setup_window()
+        Signal handler to reset the setup window.
+    """
+    def __init__(self) -> None:
+        """Initialize the MainWindow with stacked windows and navigation."""
         super().__init__()
         self.quick_guide = "Quick Guide"
         self.data_management = "Data Management"
@@ -98,15 +141,44 @@ class MainWindow(QWidget):
         self.setLayout(main_layout)
         self.welcome_window_button.setChecked(True)
     #Methods:
-    def change_to_welcome_window(self):
+    def change_to_welcome_window(self) -> None:
+        """Switch to the welcome/quick guide window.
+
+        Updates the window title and stacks index to display the
+        welcome window. Sets its button as checked.
+
+        Returns
+        -------
+        None
+        """
         self.setWindowTitle(f"Linear Regression - {self.quick_guide}")
         self.stacked_widget.setCurrentIndex(0)
         self.welcome_window_button.setChecked(True)
-    def change_to_setup_window(self):
+
+    def change_to_setup_window(self) -> None:
+        """Switch to the data management window.
+
+        Updates the window title and stacks index to display the
+        setup window. Sets its button as checked.
+
+        Returns
+        -------
+        None
+        """
         self.setWindowTitle(f"Linear Regression - {self.data_management}")
         self.stacked_widget.setCurrentIndex(1)
         self.setup_window_button.setChecked(True)
-    def change_to_result_window(self):
+
+    def change_to_result_window(self) -> None:
+        """Switch to the model management window.
+
+        Updates the window title and stacks index to display the
+        results window. Sets its button as checked.
+
+        Returns
+        -------
+        None
+        """
         self.setWindowTitle(f"Linear Regression - {self.model_management}")
         self.stacked_widget.setCurrentIndex(2)
         self.result_window_button.setChecked(True)
@@ -117,17 +189,66 @@ class MainWindow(QWidget):
     #-------------------------Connections:------------------------------
     #Signals received from SetupWindow and sent to ResultWindow.
     @pyqtSlot()
-    def another_file_opened(self):
+    def another_file_opened(self) -> None:
+        """Notify ResultWindow that a new file has been opened.
+
+        This signal handler is triggered when SetupWindow opens a new
+        data file. Propagates the signal to ResultWindow to reset any
+        previous results.
+
+        Returns
+        -------
+        None
+        """
         self.result_window.another_file_opened()
 
     @pyqtSlot(object)
-    def train_test_df_ready(self, res):
+    def train_test_df_ready(self, res: object) -> None:
+        """Pass train-test split results to ResultWindow.
+
+        This signal handler receives the train-test split results from
+        SetupWindow and forwards them to ResultWindow for model training.
+
+        Parameters
+        ----------
+        res : object
+            Train-test split result object from SetupWindow.
+
+        Returns
+        -------
+        None
+        """
         self.result_window.train_test_df_res(res)
+
     #Signals received from ResultWindow and sent to SetupWindow.
     @pyqtSlot(object)
-    def cant_be_plotted(self, res):
+    def cant_be_plotted(self, res: object) -> None:
+        """Notify SetupWindow that a plot cannot be generated.
+
+        This signal handler receives notification from ResultWindow when
+        plotting is not possible (e.g., multiple features) and forwards
+        it to SetupWindow to inform the user.
+
+        Parameters
+        ----------
+        res : object
+            Error or status information from ResultWindow.
+
+        Returns
+        -------
+        None
+        """
         self.setup_window.cant_be_plotted(res)
 
     @pyqtSlot()
-    def reset_setup_window(self):
+    def reset_setup_window(self) -> None:
+        """Reset SetupWindow to initial state after model loading.
+
+        This signal handler is triggered when ResultWindow loads a
+        saved model. Resets SetupWindow to allow a new workflow.
+
+        Returns
+        -------
+        None
+        """
         self.setup_window.reset_to_initial_state()

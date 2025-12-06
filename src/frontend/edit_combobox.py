@@ -1,9 +1,23 @@
 from PyQt5.QtWidgets import QComboBox, QListView
 
-def setup_global_combobox_behavior():
+def setup_global_combobox_behavior() -> None:
+    """Customize global QComboBox behavior for better UX.
+
+    Modifies QComboBox.__init__ and showPopup methods globally to:
+    1. Remove decorations from list items (no selection highlights).
+    2. Dynamically size the dropdown popup to fit content width.
+
+    This function should be called once during application startup to
+    affect all QComboBox instances created thereafter.
+
+    Returns
+    -------
+    None
+    """
     original_init = QComboBox.__init__
 
-    def custom_init(self, *args, **kwargs):
+    def custom_init(self, *args, **kwargs) -> None:
+        """Initialize QComboBox with custom styling for list view."""
         original_init(self, *args, **kwargs)
 
         view = QListView()
@@ -21,7 +35,8 @@ def setup_global_combobox_behavior():
 
     original_show_popup = QComboBox.showPopup
 
-    def custom_show_popup(self):
+    def custom_show_popup(self) -> None:
+        """Display popup and adjust its width to fit content."""
         original_show_popup(self)
 
         view = self.view()

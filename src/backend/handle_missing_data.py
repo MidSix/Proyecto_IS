@@ -1,21 +1,63 @@
 import pandas as pd
-# Don't need to use a class. We don't need to store states.
-# I mean, you could store states but they are meaningless here.
-# A class is only useful when you need to store meaningful states(attributes)
-# and use methods associated to those states. We don't need that here.
+from typing import Optional
+# We do not need a class here because we do not store state.
+# A class is only useful when attributes (state) are meaningful and
+# methods operate on that state; in this module simple functions are
+# enough.
 class MissingDataError(Exception):
-    # personal exception for missing data handling.
-    # Look that this class inherits from Exception so we get all its methods
-    # and class attributes, because __init__ is a method and here
-    # we are not redefining it, we just inherit it.
+    """Custom exception for missing data handling.
+
+    This exception is raised when issues occur during missing data
+    processing. It inherits from Exception, reusing its methods and
+    behavior.
+    """
+    # Custom exception for missing data handling. It inherits from
+    # Exception, so it reuses its methods and behavior.
     pass
 
-def handle_missing_data(df, cols, strategy, constant=None):
+def handle_missing_data(
+        df: pd.DataFrame,
+        cols:list,
+        strategy:str,
+        constant:Optional[int] = None
+        ):
+    """Handle missing data in specified DataFrame columns.
+
+    This function processes missing values according to the specified
+    strategy and returns the processed DataFrame along with summary
+    messages.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame containing missing values.
+    cols : list
+        Column names to process for missing values.
+    strategy : str
+        Strategy to apply: 'Delete rows with NaN', 'Fill with mean',
+        'Fill with median', or 'Fill with constant'.
+    constant : str or numeric, optional
+        Constant value used to fill missing entries when strategy is
+        'Fill with constant'. The function accepts a string or a
+        numeric value; strings are stripped and converted to float.
+        Default is None.
+
+    Returns
+    -------
+    tuple
+        Processed DataFrame, missing values summary message, and
+        preprocessing completion message.
+
+    Raises
+    ------
+    MissingDataError
+        If no missing values found or invalid strategy provided.
+    """
     missing_counts = df[cols].isna().sum()
     total_missing = int(missing_counts.sum())
     detail = "\n".join(
-        [f"{col}: {int(cnt)}" for col, cnt in missing_counts.items() if cnt > 0]
-        )
+    [f"{col}: {int(cnt)}" for col, cnt in missing_counts.items() if cnt > 0]
+    )
     msg_NaN_summary = f"Total NaN values: {total_missing}\n\n{detail}"
     msg_preprocess_complete = ""
     if total_missing == 0:
@@ -25,11 +67,46 @@ def handle_missing_data(df, cols, strategy, constant=None):
     df_processed, msg_preprocess_complete = result
     return df_processed, msg_NaN_summary, msg_preprocess_complete
 
-def strategy_handle_missing_data(df, cols, strategy, constant=None):
-        # this don't modify the original df, it returns a new one
-        # so we need to reassign it in the GUI afterwards.
-        # you can set this inplace too, but better not to.
-        # is it better for testing this module.
+def strategy_handle_missing_data(
+        df: pd.DataFrame,
+        cols: list,
+        strategy: str,
+        constant: Optional[int]=None
+        ):
+    """Apply specified missing data handling strategy.
+
+    This function executes the selected strategy to handle missing
+    values in specified columns. It does not modify the original
+    DataFrame but returns a new one, which is better for testing and
+    for the GUI where the caller can reassign the processed DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        Input DataFrame with missing values.
+    cols : list
+        Column names to process.
+    strategy : str
+        Strategy name: 'Delete rows with NaN', 'Fill with mean',
+        'Fill with median', or 'Fill with constant'.
+    constant : str or numeric, optional
+        Value used to fill missing entries when strategy is
+        'Fill with constant'. Strings will be stripped and converted
+        to float. Default is None.
+
+    Returns
+    -------
+    tuple
+        Processed DataFrame and completion status message.
+
+    Raises
+    ------
+    MissingDataError
+        If constant is empty or strategy is unknown.
+    """
+        # This function does not modify the original DataFrame. It returns
+        # a new one, which is better for testing and for the GUI, where
+        # the caller can reassign the processed DataFrame.
     if strategy == "Delete rows with NaN":
         before = len(df)
         df = df.dropna(subset=cols)

@@ -3,9 +3,48 @@ import pandas as pd
 import os  # Handle file paths and extensions that may vary
            # by OS (Linux, Windows, macOS)
 
-# I decided to use pandas for the general dataframe handling, because
-# it provides a matrix-like structure and easy data manipulation.
+# I decided to use pandas for the general dataframe handling
+# because it provides a matrix-like structure and easy data
+# manipulation.
 class DataModule:
+    """Container for loading and providing dataset access.
+
+    This class encapsulates loading data from several file types and
+    exposes helper methods for accessing features, target, and basic
+    summaries. It is designed for use by the GUI and tests.
+
+    Attributes
+    ----------
+    file_lists : dict
+        Mapping of filename to absolute path added by the user.
+    current_file_name : str or None
+        Currently selected file name.
+    current_file_type : str or None
+        File extension (without dot) of the current file.
+    current_dataframe : pd.DataFrame or None
+        Loaded pandas DataFrame or None if not loaded.
+    current_connection : sqlite3.Connection or None
+        SQLite connection when a sqlite file is used.
+    error_message : str or None
+        Last error message, or None when last operation succeeded.
+
+    Methods
+    -------
+    add_file_path(file_path, file_name)
+        Add a file path under a given display name.
+    set_current_file(file_name)
+        Select a stored file name as current.
+    load_data()
+        Load the currently selected file into a DataFrame.
+    is_empty()
+        Return True if no DataFrame is loaded or it is empty.
+    get_features()
+        Return all columns except the last as features.
+    get_target()
+        Return the last column as target variable.
+    direct_data_load(data)
+        Load a pandas DataFrame directly (for tests).
+    """
     # When initializing, the user can idle in the window waiting to
     # add file paths.
     def __init__(self):
@@ -17,12 +56,12 @@ class DataModule:
         # Remember this is a pandas dataframe, it is a matrix made
         # internally as a 2D array.
         self.current_dataframe = None
-        # This is an object special for SQLite that handles the
+        # This is a special SQLite object that handles the
         # connection to the database.
         self.current_connection = None
-        # To store error messages and show them in the GUI, this
-        # variable will store a string with the current error message
-        # and be None when the last operation was successful.
+        # To store error messages and show them in the GUI
+        # this variable stores a string with the current error message
+        # and is None when the last operation was successful.
         self.error_message = None
 
     @property
@@ -31,6 +70,20 @@ class DataModule:
         return list(self.file_lists.keys())
 
     def add_file_path(self, file_path: str, file_name: str) -> bool:
+        """Add a file path under a display name.
+
+        Parameters
+        ----------
+        file_path : str
+            Absolute or relative path to the file.
+        file_name : str
+            Display name for the file (used as a key).
+
+        Returns
+        -------
+        bool
+            True if the path was accepted and stored, False otherwise.
+        """
         file_type = (
             os.path.splitext(file_name)[-1][1:].lower()
             if file_name
@@ -41,22 +94,33 @@ class DataModule:
             or file_type not in ['sqlite', 'db', 'csv', 'xlsx', 'xls']
         ):
             self.error_message = (
-                "File does not exist or is incompatible. Please provide a "
+                "File does not exist or is incompatible."
+                "Please provide a "
                 "valid file path."
             )
             return False
         self.error_message = None
-        # I think this is a better way to handle it, without testing if
-        # the name already has a path. It has to write in the dict
-        # every time but solves the problem of having two files with
-        # the same name in different directories. If that happens and
-        # we open another file with the same name, it will open
-        # normally because every time we replace the value (path)
-        # associated with that key (name).
+        # This approach overwrites the path for each name
+        # without checking if it already exists. It solves the issue
+        # of having two files with the same name in different
+        # directories: opening another file with
+        # the same name just updates the stored path.
         self.file_lists[file_name] = file_path
         return True
 
     def set_current_file(self, file_name: str) -> bool:
+        """Set the current file by name.
+
+        Parameters
+        ----------
+        file_name : str
+            Display name of the file to select as current.
+
+        Returns
+        -------
+        bool
+            True if the file name exists in file_lists, False otherwise.
+        """
         # For the file selector in the GUI.
         if file_name not in self.file_lists:
             self.error_message = (
@@ -73,6 +137,17 @@ class DataModule:
         return True
 
     def load_data(self) -> bool:
+        """Load the currently selected file into a pandas DataFrame.
+
+        This method supports sqlite/db, csv, xlsx and xls file types.
+        It sets `self.current_dataframe` on success and returns True.
+        On failure it sets `self.error_message` and returns False.
+
+        Returns
+        -------
+        bool
+            True if loading succeeded, False otherwise.
+        """
         # Returns True if data loads successfully, False otherwise.
         try:
             if self.current_file_type in ['sqlite', 'db']:
@@ -101,14 +176,11 @@ class DataModule:
                     f"SELECT * FROM {table_name}",
                     self.current_connection,
                 )
-                # This is a good practice. Names are just pointers to
-                # objects. If we just reassign it, the object still
-                # exists, therefore the connection is still open with
-                # that file until Python garbage collector closes it.
-                # Until then, the SQL file is locked and if you try to
-                # open it, it would open in read-only to avoid
-                # corrupting the file. Basically it's better to close
-                # the connection.
+                # Good practice: explicitly close the connection
+                # instead of relying on the garbage collector.
+                # If we only reassign the connection, the object may
+                # stay open and keep the SQLite file locked in read-only
+                # mode until it is collected.
                 self.current_connection.close()
 
             elif self.current_file_type == 'csv':
@@ -116,17 +188,11 @@ class DataModule:
                     self.current_file_path,
                     header=0,
                 )
-                # Just a curiosity. These pandas functions never return
-                # None. If the file is completely empty, without
-                # metadata or headers, it raises its own error. So we
-                # don't use .empty with a None type object in any
-                # case. This is why this is not causing issues, and if
-                # the file doesn't have user data but has headers and
-                # metadata, it returns an empty dataframe object. Then
-                # we can use .empty safely and raise our own error.
-                # You can test this by creating an empty file and
-                # trying to load it. Pandas raises its own error
-                # message, different from ours here.
+                # Pandas readers do not return None.
+                # If the file is totally empty (no metadata or headers),
+                # pandas raises its own error. If the file has headers
+                # but no data, it returns an empty DataFrame, so
+                # we can safely use .empty and raise our own error.
                 if self.current_dataframe.empty:
                     raise ValueError(
                         "The CSV file is empty or could not be read "
@@ -144,8 +210,8 @@ class DataModule:
                         "correctly."
                     )
             else:
-                # It shouldn't reach this point because of previous
-                # checks.
+                # It should not reach this point
+                # because of previous checks.
                 raise ValueError(
                     "Unsupported file type. Supported types are: "
                     "sqlite, db, csv, xlsx, xls."
@@ -161,19 +227,34 @@ class DataModule:
         return True
 
     def is_empty(self) -> bool:
+        """Check if current DataFrame is empty or not loaded.
+
+        Returns
+        -------
+        bool
+            True if no DataFrame is loaded or it is empty, False
+            otherwise.
+        """
         # Returns True if the dataframe is empty, False if it has data.
+        # Fundamental: if path or file are incorrect,
+        # self.current_dataframe is None. A None is not a pandas type,
+        # so we cannot use pandas .empty on it. Returning True here
+        # avoids changing the current implementation.
         if self.current_dataframe is None:
-            # This line is fundamental. If path or file are incorrect
-            # then self.current_dataframe is None. A None type is not
-            # a pandas type, so we can't use the pandas built-in to
-            # check if it's empty with our current implementation. To
-            # avoid changing it I just add this return xd.
             return True
         # We can use pandas built-in function to check if the
         # dataframe is empty.
         return self.current_dataframe.empty
 
-    def get_summary(self):
+    def get_summary(self) -> pd.DataFrame:
+        """Return a basic summary description of the current DataFrame.
+
+        Returns
+        -------
+        pd.DataFrame or None
+            Summary produced by `DataFrame.describe(include='all')`, or
+            None if no data is available.
+        """
         if self.is_empty():
             self.error_message = "No data to summarize."
             return None
@@ -181,6 +262,13 @@ class DataModule:
         return self.current_dataframe.describe(include='all')
 
     def showcase_data(self) -> bool:
+        """Print the current DataFrame to the console.
+
+        Returns
+        -------
+        bool
+            True if the DataFrame was printed, False if no data.
+        """
         # Just shows the data in the console. Returns True if
         # successful, False if not.
         if self.is_empty():
@@ -192,13 +280,26 @@ class DataModule:
             return True
 
     def main(self, file_path: str):
+        """Wrapper that adds, selects and loads a file.
+
+        This method adds the provided `file_path`, selects it as the
+        current file, attempts to load it and returns the loaded
+        DataFrame together with an error message (None on success).
+
+        Parameters
+        ----------
+        file_path : str
+            Path to the file to add and load.
+
+        Returns
+        -------
+        tuple
+            `(pd.DataFrame or None, str or None)` representing the
+            loaded DataFrame and an error message.
+        """
         # To simplify things and encapsulate this module. GUI will call
         # this function that handles all the internal logic and returns
         # the dataframe associated with the given path.
-        """Wrapper that adds, selects and loads a file.
-
-        Returns (DataFrame or None, error_message or None).
-        """
         self.error_message = None
         file_name = os.path.basename(file_path) if file_path else None
 
@@ -220,23 +321,34 @@ class DataModule:
         return self.current_dataframe, None
 
     # ------ Functions added for linear regression testing purposes ----
+    # Returns all columns except the last one as features. This follows
+    # a common convention in machine learning: all columns except the
+    # last are input features and the last column is the target.
     def get_features(self) -> pd.DataFrame:
-        # This function returns all columns except the last one. This
-        # aims to get the features for linear models. To summarize, all
-        # columns except the last one are features; last column is
-        # target. This is a common convention in datasets for machine
-        # learning. Features are the input variables that the model
-        # will use to predict the target variable, which is the output
-        # variable.
+        """Return all columns except the last as the feature set.
+
+        Returns
+        -------
+        pd.DataFrame or None
+            DataFrame containing feature columns, or None if no data is
+            loaded.
+        """
         if self.is_empty():
             self.error_message = "Dataframe is empty. Load data first."
             return None
         # All rows, all columns except the last one.
         return self.current_dataframe.iloc[:, :-1]
 
+    # Returns the target variable, which is the last column.
     def get_target(self) -> pd.Series:
-        # As previously explained, this function gets the target
-        # variable, which is the last column.
+        """Return the target variable (the last column).
+
+        Returns
+        -------
+        pd.Series or None
+            Series containing the target column, or None if no data is
+            loaded.
+        """
         if self.is_empty():
             self.error_message = "Dataframe is empty. Load data first."
             return None
@@ -244,10 +356,25 @@ class DataModule:
         # All rows, only the last column.
         return self.current_dataframe.iloc[:, -1]
 
+    # Loads data directly from a pandas DataFrame, mainly for testing
+    # the linear regression module.
     def direct_data_load(self, data: pd.DataFrame) -> bool:
-        # This function was added mainly for testing purposes, to load
-        # data directly from a pandas dataframe. Primarily for the
-        # linear regression testing module.
+        """Load a pandas DataFrame directly into the module.
+
+        This is primarily used by unit tests to inject a DataFrame
+        without reading from disk.
+
+        Parameters
+        ----------
+        data : pd.DataFrame
+            DataFrame to load into the module.
+
+        Returns
+        -------
+        bool
+            True if the provided object was a DataFrame and was loaded
+            successfully, False otherwise.
+        """
         if not isinstance(data, pd.DataFrame):
             self.error_message = (
                 "Provided data is not a pandas DataFrame."
@@ -255,4 +382,3 @@ class DataModule:
             return False
         self.current_dataframe = data
         return True
-    # ------ Functions added for linear regression testing purposes ----

@@ -1,3 +1,9 @@
+"""Unit tests for the DataModule backend component.
+
+Tests data loading functionality across multiple file formats (CSV, SQLite,
+Excel). Verifies file path validation, current file selection, data loading,
+and error handling.
+"""
 import os
 import pandas as pd
 import unittest  # For automatic testing purposes
@@ -7,10 +13,51 @@ import tempfile  # Create temporary files for testing without using
 from src.backend.data_loader import DataModule
 
 class TestDataModule(unittest.TestCase):
-    def setUp(self):
+    """Test suite for DataModule class.
+
+    Tests file path management, file selection, data loading from various
+    formats, and error conditions.
+
+    Methods
+    -------
+    setUp()
+        Initialize DataModule instance before each test.
+    test_add_file_path_invalid()
+        Test adding non-existent file path returns False.
+    test_set_current_file_invalid()
+        Test setting non-existent file returns False.
+    test_load_data_csv_success()
+        Test successful CSV file loading and validation.
+    test_main_returns_tuple_and_error_on_bad_path()
+        Test main() returns None DataFrame and error on bad path.
+    """
+    def setUp(self) -> None:
+        """Initialize DataModule instance for testing.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.data_module = DataModule()
 
-    def test_add_file_path_invalid(self):
+    def test_add_file_path_invalid(self) -> None:
+        """Test adding an invalid file path returns False.
+
+        Verifies that attempting to add a non-existent file path
+        returns False and sets an error message.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Test adding an invalid file path (easy one).
         result = self.data_module.add_file_path(
             "non_existent_file.csv",
@@ -22,7 +69,20 @@ class TestDataModule(unittest.TestCase):
         # invalid file path.
         self.assertIsNotNone(self.data_module.error_message)
 
-    def test_set_current_file_invalid(self):
+    def test_set_current_file_invalid(self) -> None:
+        """Test setting non-existent file as current fails.
+
+        Creates temporary CSV file, adds it successfully, then attempts
+        to set non-existent file as current and verifies failure.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # I mean, read the name, it's self-explanatory.
         # Add a valid temporary file first to populate file_lists.
         # Here the tempfile module comes in handy.
@@ -62,7 +122,20 @@ class TestDataModule(unittest.TestCase):
             except Exception:
                 pass
 
-    def test_load_data_csv_success(self):
+    def test_load_data_csv_success(self) -> None:
+        """Test successful CSV loading and verification.
+
+        Creates temporary CSV, loads via DataModule, and verifies
+        loaded DataFrame matches original using pandas testing utility.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Test loading a valid CSV file and then checking if the
         # dataframe is loaded correctly.
         # Create temporary csv and load it via the module.
@@ -113,7 +186,20 @@ class TestDataModule(unittest.TestCase):
             except Exception:
                 pass
 
-    def test_main_returns_tuple_and_error_on_bad_path(self):
+    def test_main_returns_tuple_and_error_on_bad_path(self) -> None:
+        """Test main() returns None DataFrame and error on bad path.
+
+        Verifies main() method returns (None, error_message) tuple
+        when loading non-existent file.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # This is a good way to test the main function directly. It
         # checks if it returns the expected tuple structure and error
         # message on bad path.

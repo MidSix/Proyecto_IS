@@ -23,9 +23,74 @@ from PyQt5.QtWidgets import (
 )
 
 class ResultWindow(QWidget):
+    """Model visualization and prediction window.
+
+    Displays trained linear regression models with metrics, parity plots,
+    regression plots (for simple regression), and prediction interface.
+    Allows saving trained models and loading previously saved models.
+    Handles both simple and multiple linear regression.
+
+    Attributes
+    ----------
+    model : LinearRegressionModel
+        The trained linear regression model instance.
+    train_df : pd.DataFrame
+        Training DataFrame (first column is target).
+    test_df : pd.DataFrame
+        Test DataFrame (first column is target).
+    metrics : list
+        Model metrics computed from fit_and_evaluate().
+    toolbar : NavigationToolbar
+        Matplotlib toolbar for simple regression plot.
+    graph : FigureCanvas
+        Matplotlib canvas for simple regression plot.
+    parity_toolbar : NavigationToolbar
+        Matplotlib toolbar for parity plot.
+    parity_graph : FigureCanvas
+        Matplotlib canvas for parity plot.
+    prediction_fields : dict
+        Dictionary mapping feature names to QLineEdit widgets.
+
+    Methods
+    -------
+    clear_result_window()
+        Clear all graphs and reset prediction UI.
+    load_model_data_GUI(model_data)
+        Display loaded model data and prediction interface.
+    train_test_df_res(data)
+        Receive train/test data, fit model, and display results.
+    simple_linear_regression()
+        Display results for simple (1 feature) regression.
+    multiple_linear_regression()
+        Display results for multiple feature regression.
+    create_parity_figure()
+        Create and display parity plot (actual vs predicted).
+    save_model_dialog()
+        Save trained model with optional description.
+    load_model_data_dialog()
+        Load previously saved model file.
+    perform_prediction()
+        Make prediction using user-entered feature values.
+    build_prediction_inputs()
+        Create input fields for each model feature.
+    """
     cant_be_plotted = pyqtSignal(object)
     model_loaded = pyqtSignal()
-    def __init__(self, stacked_widget):
+    def __init__(self, stacked_widget) -> None:
+        """Initialize the result window.
+
+        Sets up the UI for model display, graphs, predictions, and
+        model saving/loading. Initializes with placeholder text.
+
+        Parameters
+        ----------
+        stacked_widget : QStackedWidget
+            Reference to the parent stacked widget for navigation.
+
+        Returns
+        -------
+        None
+        """
         super().__init__()
         self.stacked_widget = stacked_widget
         self.toolbar = None
@@ -45,7 +110,8 @@ class ResultWindow(QWidget):
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
         self.summary_model_widget = QLabel()
         self.summary_model_widget.setAlignment(Qt.AlignLeft)
-        #Just some QSS to make the self.summary_model_widget looks better.
+        #Just some QSS to make the self.summary_model_widget
+        #looks better.
         self.summary_model_widget.setStyleSheet("""
                                     QLabel {
                                     font-family: 'Consolas';
@@ -64,7 +130,8 @@ class ResultWindow(QWidget):
         self.model_path_label.setStyleSheet("color: gray;")
         self.model_path_display = QLineEdit()
         self.model_path_display.setReadOnly(True)
-        self.model_path_display.setPlaceholderText("Select a model file to load")
+        self.model_path_display.setPlaceholderText("Select a"
+                                                    " model file to load")
         self.load_model_button = QPushButton("Load model")
         self.load_model_button.clicked.connect(self.load_model_data_dialog)
         self.load_model_top_layout = QHBoxLayout()
@@ -76,7 +143,8 @@ class ResultWindow(QWidget):
         self.container_prediction_widget = QWidget()
         self.prediction_layout = QVBoxLayout()
         self.prediction_title = QLabel("Make a Prediction")
-        self.prediction_title.setStyleSheet("font-size: 16pt; font-weight: bold;")
+        self.prediction_title.setStyleSheet("font-size: 16pt;"
+                                            " font-weight: bold;")
         self.prediction_inputs_widget = QWidget()
         self.prediction_inputs_layout = QVBoxLayout()
         self.prediction_inputs_widget.setLayout(self.prediction_inputs_layout)
@@ -86,8 +154,14 @@ class ResultWindow(QWidget):
         self.prediction_result.setStyleSheet("font-size: 14pt; color: cyan;")
         self.prediction_layout.addWidget(self.prediction_title)
         self.prediction_layout.addWidget(self.prediction_inputs_widget)
-        self.prediction_layout.addWidget(self.btn_predict, alignment=Qt.AlignCenter)
-        self.btn_predict.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.prediction_layout.addWidget(
+            self.btn_predict,
+            alignment=Qt.AlignCenter
+            )
+        self.btn_predict.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Preferred
+            )
         self.prediction_layout.addWidget(self.prediction_result)
         self.container_prediction_widget.setLayout(self.prediction_layout)
         self.container_prediction_widget.hide()
@@ -97,7 +171,10 @@ class ResultWindow(QWidget):
         self.container_model_widget = QWidget()
         self.container_description_widget = QWidget()
         self.container_graph_widget = QWidget()
-        self.container_model_widget.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+        self.container_model_widget.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Preferred
+            )
         self.container_simple_regression_graph_widget = QWidget()
         self.container_multiple_regression_graph_widget =QWidget()
         #-------------------------Layouts-------------------------------
@@ -111,33 +188,57 @@ class ResultWindow(QWidget):
         self.main_layout = QVBoxLayout()
         #-------------------------Set Layouts---------------------------
         #-------------------container_scroll_area_layout----------------
-        self.container_description_layout.addWidget(self.model_description_edit)
-        self.container_description_layout.addWidget(self.save_button, alignment=Qt.AlignCenter)
-        self.save_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
-        self.container_description_widget.setLayout(self.container_description_layout)
+        self.container_description_layout.addWidget(
+            self.model_description_edit
+            )
+        self.container_description_layout.addWidget(
+            self.save_button,
+            alignment=Qt.AlignCenter
+            )
+        self.save_button.setSizePolicy(
+            QSizePolicy.Maximum,
+            QSizePolicy.Preferred
+            )
+        self.container_description_widget.setLayout(
+            self.container_description_layout
+            )
         self.container_model_layout.addWidget(self.summary_model_widget)
         self.container_model_layout.addWidget(self.container_prediction_widget)
-        self.container_model_layout.addWidget(self.container_description_widget)
+        self.container_model_layout.addWidget(
+            self.container_description_widget
+            )
         self.container_model_layout.setStretch(0, 5)
         self.container_model_layout.setStretch(1, 3)
         self.container_model_widget.setLayout(self.container_model_layout)
-        # Allow the model widget to expand horizontally so path lineedit can stretch across window
-        self.container_model_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
-        self.container_scroll_area_layout.addWidget(self.container_model_widget, 0)
-        self.container_scroll_area_layout.addWidget(self.container_graph_widget, 1)
+        # Allow the model widget to expand horizontally
+        # so path lineedit can stretch across window
+        self.container_model_widget.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Preferred
+            )
+        self.container_scroll_area_layout.addWidget(
+            self.container_model_widget, 0
+            )
+        self.container_scroll_area_layout.addWidget(
+            self.container_graph_widget, 1
+            )
         self.container_scroll_area.setLayout(self.container_scroll_area_layout)
-        # ---- Wrap container_scroll_area in scroll area for vertical scrolling
+        # ---- Wrap container_scroll_area in
+        # scroll area for vertical scrolling ---------------------------
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.scroll_area.setWidget(self.container_scroll_area)
 
-        # ----------------- TOP PANEL WIDGET -------------
+        # ----------------- TOP PANEL WIDGET ---------------------------
         self.top_panel_widget = QWidget()
         self.top_panel_widget.setLayout(self.load_model_top_layout)
         # Ensure the top panel doesn't get squashed vertically
-        self.top_panel_widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self.top_panel_widget.setSizePolicy(
+            QSizePolicy.Expanding,
+            QSizePolicy.Fixed
+            )
         # ----------------- MAIN LAYOUT -------------
         # Build the main_layout
         self.main_layout.addWidget(self.top_panel_widget)
@@ -149,7 +250,21 @@ class ResultWindow(QWidget):
         self.scroll_area.hide()
 
     # Methods:
-    def clear_result_window(self):
+    def clear_result_window(self) -> None:
+        """Clear all graphs and reset prediction UI.
+
+        Removes matplotlib canvases and toolbars, clears prediction
+        results and model description. Safe to call even if no graphs
+        exist (catches exceptions).
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         try:
             if self.toolbar is not None:
                 self.container_graph_layout.removeWidget(
@@ -175,7 +290,22 @@ class ResultWindow(QWidget):
         except Exception:
                 pass
 
-    def load_model_data_GUI(self, model_data: dict):
+    def load_model_data_GUI(self, model_data: dict) -> None:
+        """Display loaded model data and update prediction interface.
+
+        Clears previous results, extracts model metadata, rebuilds
+        prediction inputs, and shows model summary with description.
+        Displays error if loading fails.
+
+        Parameters
+        ----------
+        model_data : dict
+            Dictionary containing model metadata and description.
+
+        Returns
+        -------
+        None
+        """
         try:
             self.clear_result_window()
             self.placeholder_text.hide()
@@ -198,7 +328,20 @@ class ResultWindow(QWidget):
             QMessageBox.critical(self, "Error", f"Failed to"
                                  f"show loaded model:\n{str(e)}")
 
-    def multiple_linear_regression(self):
+    def multiple_linear_regression(self) -> None:
+        """Display results for multiple feature regression.
+
+        Sets model summary text and creates parity plot for multiple
+        regression case. Hides simple regression graph container.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.summary_model_widget.setText(self.metrics[2])
         self.show_all_containers(True)
         self.create_parity_figure()
@@ -206,7 +349,20 @@ class ResultWindow(QWidget):
         self.container_multiple_regression_graph_widget.setVisible(True)
         self.scroll_area.show()
 
-    def simple_linear_regression(self):
+    def simple_linear_regression(self) -> None:
+        """Display results for simple (single feature) regression.
+
+        Displays model summary, creates regression and parity plots
+        with navigation toolbars, and manages graph containers.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.summary_model_widget.setText(self.metrics[2])
         fig = self.model.get_plot_figure()
         self.graph = FigureCanvas(fig)
@@ -230,14 +386,44 @@ class ResultWindow(QWidget):
         self.scroll_area.show()
     #---------------------------Connections-----------------------------
     @pyqtSlot(object)
-    def another_file_opened(self):
+    def another_file_opened(self) -> None:
+        """Clear display when new file is loaded in SetupWindow.
+
+        Clears graphs and results, shows placeholder text to indicate
+        that user needs to load/create a model first.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         self.clear_result_window()
         self.model_path_display.clear()
         self.summary_model_widget.hide()
         self.scroll_area.hide()
         self.placeholder_text.show()
     @pyqtSlot(object)
-    def train_test_df_res(self, data:list):
+    def train_test_df_res(self, data: list) -> None:
+        """Receive train/test data, fit model, and display results.
+
+        Receives signal from SetupWindow with training and test data,
+        fits the linear regression model, computes metrics, and displays
+        appropriate visualization (simple or multiple regression).
+        Emits cant_be_plotted signal if model cannot be visualized.
+
+        Parameters
+        ----------
+        data : list
+            List containing train/test DataFrames and split summary.
+            Format: [(train_df, test_df), summary_dict]
+
+        Returns
+        -------
+        None
+        """
         #IMPORTANT to understand, trust me, worth to undertand.
         #So we ran our own event from class SetupWindow.
         #That event is sent to MainWindow alongside the data obtained
@@ -285,7 +471,20 @@ class ResultWindow(QWidget):
             self.simple_linear_regression()
             return
 
-    def create_parity_figure(self):
+    def create_parity_figure(self) -> None:
+        """Create and display parity plot (actual vs predicted).
+
+        Generates y vs y_hat plot from model, creates matplotlib canvas
+        and toolbar, and adds to graph layout.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         parity_fig = self.model.get_y_vs_yhat_figure()
         self.parity_graph = FigureCanvas(parity_fig)
         self.parity_toolbar = NavigationToolbar(self.parity_graph, self)
@@ -309,11 +508,20 @@ class ResultWindow(QWidget):
             self.container_multiple_regression_graph_widget
             )
 
-    def save_model_dialog(self):
-        """
-        It allows you to save the trained model
-        along with its essential information.
-        Data and graphics are excluded.
+    def save_model_dialog(self) -> None:
+        """Save trained model with optional description.
+
+        Opens save file dialog, prompts user for model description,
+        and saves model using save_model_data backend function.
+        Displays success or error messages accordingly.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
         """
         # Save user-written description as attribute
         self.model_description = self.model_description_edit.toPlainText()
@@ -348,7 +556,21 @@ class ResultWindow(QWidget):
                 "Error saving",
                 f"An error occurred while saving the model:\n{str(e)}"
             )
-    def show_all_containers(self, value):
+    def show_all_containers(self, value: bool) -> None:
+        """Show or hide all major UI containers.
+
+        Controls visibility of model summary, graphs, description,
+        and scroll area containers.
+
+        Parameters
+        ----------
+        value : bool
+            True to show containers, False to hide.
+
+        Returns
+        -------
+        None
+        """
         widgets = [
             self.container_model_widget,
             self.container_description_widget,
@@ -360,8 +582,22 @@ class ResultWindow(QWidget):
         for widget in widgets:
             widget.setVisible(value)
 
-    def load_model_data_dialog(self):
-        """Load model but from ResultWindow (Model Management tab)."""
+    def load_model_data_dialog(self) -> None:
+        """Load previously saved model file.
+
+        Opens file dialog for .joblib model files, validates model
+        structure, loads model object and metadata, and displays results.
+        Emits model_loaded signal and shows error messages for invalid
+        files.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         file_path, _ = QFileDialog.getOpenFileName(
             self,
             "Load model",
@@ -392,11 +628,12 @@ class ResultWindow(QWidget):
             QMessageBox.critical(
                 self,
                 "Invalid model object",
-                "The selected file does not contain a valid trained model object. "
-                "It was likely created with an older version of the application."
+                "The selected file does not contain"
+                "a valid trained model object. "
+                "It was likely created with an older"
+                "version of the application."
             )
             return
-
         # Set self.model to loaded model object
         self.model = model_data["model"]
         self.model_path_display.setText(file_path)
@@ -405,7 +642,21 @@ class ResultWindow(QWidget):
         QMessageBox.information(self, "Model loaded", "Model loaded\n"
                                                         "successfully.")
 
-    def build_prediction_inputs(self):
+    def build_prediction_inputs(self) -> None:
+        """Create input fields for each model feature.
+
+        Dynamically generates QLineEdit widgets for each feature in the
+        model, stores references in prediction_fields dictionary for
+        later retrieval of user values.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         # Clear previous inputs
         for i in reversed(range(self.prediction_inputs_layout.count())):
             item = self.prediction_inputs_layout.takeAt(i)
@@ -426,22 +677,46 @@ class ResultWindow(QWidget):
             self.prediction_inputs_layout.addWidget(container)
             self.prediction_fields[feature] = edit
 
-    def perform_prediction(self):
+    def perform_prediction(self) -> None:
+        """Make prediction using user-entered feature values.
+
+        Retrieves values from prediction input fields, validates all
+        fields are filled with numeric values, calls model.predict(),
+        and displays result. Shows error messages for invalid inputs.
+
+        Parameters
+        ----------
+        None
+
+        Returns
+        -------
+        None
+        """
         try:
             values = []
             for feature, edit in self.prediction_fields.items():
                 text = edit.text().strip()
                 if text == "":
-                    QMessageBox.warning(self, "Error", f"Missing value for: {feature}")
+                    QMessageBox.warning(
+                        self,
+                        "Error",
+                        f"Missing value for: {feature}"
+                        )
                     return
                 try:
                     values.append(float(text))
                 except Exception:
-                    QMessageBox.warning(self, "Error", f"Invalid numeric value for: {feature}")
+                    QMessageBox.warning(
+                        self,
+                        "Error",
+                        f"Invalid numeric value for: {feature}"
+                        )
                     return
             X = np.array(values).reshape(1, -1)
             y_pred = self.model.predict(X)
             pred_val = float(y_pred[0])
-            self.prediction_result.setText(f"{self.model.target_name}: {pred_val:.4f}")
+            self.prediction_result.setText(
+                f"{self.model.target_name}: {pred_val:.4f}"
+                )
         except Exception as e:
             QMessageBox.critical(self, "Prediction error", str(e))
