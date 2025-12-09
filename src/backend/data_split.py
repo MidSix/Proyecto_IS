@@ -24,7 +24,7 @@ class DataSplitter:
         shuffle: bool = True
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
 
-        #handlers, should'nt be neccesary but well, never know.
+        # Handlers, should'nt be neccesary but well, never know.
         if df is None:
             raise DataSplitError("No dataframe loaded.")
         if not isinstance(df, pd.DataFrame):
@@ -39,7 +39,7 @@ class DataSplitter:
         if not (0.0 < test_size < 1.0):
             raise DataSplitError("test_size must be a float between 0 and 1.")
 
-        # sklearn makes a reproducible split with random_state
+        # Sklearn makes a reproducible split with random_state
         train_df, test_df = train_test_split(df, test_size=test_size,
                                              random_state=random_seed,
                                              shuffle=shuffle)

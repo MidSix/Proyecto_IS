@@ -16,7 +16,7 @@ def load_model_data(model_data: dict):
         metrics = model_data.get("metrics", {})
         description = model_data.get("description", "")
 
-        # Construir texto de resumen atractivo
+        # Create an engaging summary text
         train_metrics = metrics.get("train", {})
         test_metrics = metrics.get("test", {})
 

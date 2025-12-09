@@ -19,11 +19,11 @@ class MainWindow(QWidget):
         self.setup_window = SetupWindow(self.stacked_widget)
         self.result_window = ResultWindow(self.stacked_widget)
 
-        self.stacked_widget.addWidget(self.welcome_window) # índice 0
-        self.stacked_widget.addWidget(self.setup_window)  # índice 1
-        self.stacked_widget.addWidget(self.result_window) # indice 2
+        self.stacked_widget.addWidget(self.welcome_window) # Index 0
+        self.stacked_widget.addWidget(self.setup_window)  # Index 1
+        self.stacked_widget.addWidget(self.result_window) # Index 2
         #------------------Conections-----------------------------------
-        #here we connect the signals we got from the two windows
+        # Here we are connecting the signals we got from the two windows
         self.setup_window.another_file_opened.connect(self.another_file_opened)
         self.setup_window.train_test_df_ready.connect(self.train_test_df_ready)
         self.result_window.cant_be_plotted.connect(self.cant_be_plotted)
@@ -50,31 +50,31 @@ class MainWindow(QWidget):
         ):
             btn.setCheckable(True)
 
-        #Navigation button group - to make them exclusive:
-        #In other words, only one can be selected at a time.
-        #just manages the logic of exclusivity, no UI component.
+        # Navigation button group - to make them exclusive:
+        # In other words, only one can be selected at a time.
+        # Just manages the logic of exclusivity, no UI component.
         self.nav_group = QButtonGroup(self)
         self.nav_group.setExclusive(True)
         self.nav_group.addButton(self.welcome_window_button)
         self.nav_group.addButton(self.setup_window_button)
         self.nav_group.addButton(self.result_window_button)
 
-        #layouts:
+        #Layouts:
 
-        #top layout - main bar:
+        # Top layout - main bar:
         top_layout = QHBoxLayout()
         top_layout.addWidget(self.welcome_window_button)
         top_layout.addWidget(self.setup_window_button)
         top_layout.addWidget(self.result_window_button)
 
-        #Container of main bar - this for the border:-------------------
+        # Container of main bar - this for the border:-------------------
         top_panel_widget = QWidget()
         top_panel_widget.setLayout(top_layout)
         top_panel_widget.setSizePolicy(
             QSizePolicy.Maximum, QSizePolicy.Preferred
             )
         #---------------------------------------------------------------
-        #Just some Qstyle for the buttons in the top panel:
+        # Just some Qstyle for the buttons in the top panel:
         top_panel_widget.setStyleSheet("""
             QPushButton {
                 padding: 6px 12px;
@@ -94,7 +94,7 @@ class MainWindow(QWidget):
         main_layout.addWidget(self.stacked_widget)
         self.setLayout(main_layout)
         self.welcome_window_button.setChecked(True)
-    #Methods:
+    # Methods:
     def change_to_welcome_window(self):
         self.setWindowTitle("Linear Regression - Quick Start")
         self.stacked_widget.setCurrentIndex(0)
@@ -108,11 +108,11 @@ class MainWindow(QWidget):
         self.stacked_widget.setCurrentIndex(2)
         self.result_window_button.setChecked(True)
 
-    #MainWindow as the orchestrator, the one
-    #which handle the communication between these two classes.
-    #Signals received from SetupWindow and ResultWindow.
+    # MainWindow as the orchestrator, the one
+    # which handle the communication between these two classes.
+    # Signals received from SetupWindow and ResultWindow.
     #-------------------------Connections:------------------------------
-    #Signals received from SetupWindow and sent to ResultWindow.
+    # Signals received from SetupWindow and sent to ResultWindow.
     @pyqtSlot()
     def another_file_opened(self):
         self.result_window.another_file_opened()
@@ -120,7 +120,7 @@ class MainWindow(QWidget):
     @pyqtSlot(object)
     def train_test_df_ready(self, res):
         self.result_window.train_test_df_res(res)
-    #Signals received from ResultWindow and sent to SetupWindow.
+    # Signals received from ResultWindow and sent to SetupWindow.
     @pyqtSlot(object)
     def cant_be_plotted(self, res):
         self.setup_window.cant_be_plotted(res)

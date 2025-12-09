@@ -21,7 +21,7 @@ class WelcomeWindow(QWidget):
                                 }
                                 """)
         self.layout.addWidget(self.welcome_message, alignment=Qt.AlignCenter)
-        #this is just some HTML to format the welcome message
+        # This is just some HTML to format the welcome message
         self.welcome_message.setText(
             "<h1><b>Welcome to the Linear Regression App</b></h1><br>"
             "<b>1. Load data</b><br>"

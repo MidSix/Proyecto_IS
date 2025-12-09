@@ -4,7 +4,7 @@ import pandas as pd
 # A class is only useful when you need to store meaningful states(attributes)
 # and use methods associated to those states. We don't need that here.
 class MissingDataError(Exception):
-    # personal exception for missing data handling.
+    # Personal exception for missing data handling.
     # Look that this class inherits from Exception so we get all its methods
     # and class attributes, because __init__ is a method and here
     # we are not redefining it, we just inherit it.
@@ -26,7 +26,7 @@ def handle_missing_data(df, cols, strategy, constant=None):
     return df_processed, msg_NaN_summary, msg_preprocess_complete
 
 def strategy_handle_missing_data(df, cols, strategy, constant=None):
-        # this don't modify the original df, it returns a new one
+        # This doesn't modify the original df, it returns a new one
         # so we need to reassign it in the GUI afterwards.
         # you can set this inplace too, but better not to.
         # is it better for testing this module.

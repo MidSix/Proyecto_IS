@@ -14,7 +14,7 @@ class TestHandleMissingData(unittest.TestCase):
         self.df = pd.DataFrame({
             "A": [1, 2, np.nan, 4, 5],     # Numeric with 1 missing
             "B": [10, np.nan, 30, 40, 50], # Numeric with 1 missing
-            "C": ["a", "b", "c", "d", "e"] # Text column (should be ignored by numeric strategies)
+            "C": ["a", "b", "c", "d", "e"] # Text column 
         })
         self.cols = ["A", "B"]  # We usually operate on specific columns
 
@@ -58,7 +58,6 @@ class TestHandleMissingData(unittest.TestCase):
 
     def test_strategy_fill_constant(self):
         # Filling with a specific value, e.g., "0"
-        # Note: Your code expects 'constant' as a string input from GUI, then floats it.
         constant_val = "99"
         df_res, _, msg = handle_missing_data(
             self.df.copy(), self.cols, "Fill with constant",

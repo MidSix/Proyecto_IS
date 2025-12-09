@@ -6,15 +6,15 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QBrush, QColor
 # Lightweight Qt model exposing a pandas.DataFrame to QTableView
-#This follows the MVC design pattern: model, view, controller.
-#So this class works as the model for the view in the table.
-#That means, here, inside this class lives the data shown in the table.
-#remember that an abstract class can't be instanciated directly
-#because it doesn't have the methods with the tag
-#@abstractmethod implemented. Just defines
-#some sort of contract in which the subclass of the abstractclass must
-#implement those methods to be instanciated. Those methods are the ones
-#we are doing polymorphism here: rowCount,columnCount,data
+# This follows the MVC design pattern: model, view, controller.
+# So this class works as the model for the view in the table.
+# That means, here, inside this class lives the data shown in the table.
+# remember that an abstract class can't be instanciated directly
+# because it doesn't have the methods with the tag
+# @abstractmethod implemented. Just defines
+# some sort of contract in which the subclass of the abstractclass must
+# implement those methods to be instanciated. Those methods are the ones
+# we are doing polymorphism here: rowCount,columnCount,data
 class PandasModel(QAbstractTableModel):
     """Lightweight model: the view requests data lazily;
     no per-cell QTableWidgetItem."""
@@ -93,7 +93,7 @@ class PandasModel(QAbstractTableModel):
             and self._df[c].isna().any()
         }
 
-        # Repintar celdas y encabezados
+        # Repaint cells and headers
         if self.rowCount() and self.columnCount():
             top_left = self.index(0, 0)
             bottom_right = self.index(self.rowCount() - 1,

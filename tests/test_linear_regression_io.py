@@ -10,14 +10,14 @@ from src.backend.linear_regression_io import (
 
 class MockLinearModel:
     """
-    Clase falsa (Mock) para simular el comportamiento de LinearRegressionModel.
-    Necesaria para que el test de guardado funcione sin depender del archivo de creación.
+    A dummy class (Mock) to simulate the behavior of LinearRegressionModel.
+    Required for the save test to function independently of the creation file.
     """
     def __init__(self):
         self.regression_line = "y = 2.5 * x + 10"
         self.feature_names = ["Feature_A"]
         self.target_name = "Target_B"
-        # Simulamos los getters como valores directos
+        # We simulate tne getters as direct values
         self.get_train_R2 = 0.95
         self.get_train_MSE = 0.05
         self.get_test_R2 = 0.92
@@ -33,7 +33,7 @@ class MockLinearModel:
 class TestLinearRegressionIO(unittest.TestCase):
     def setUp(self):
         self.mock_model = MockLinearModel()
-        # Estructura de diccionario imitando lo que se guarda en el .joblib
+        # Dictionary structure mimicking what is stored in the .joblib
         self.sample_model_data = {
             "formula": "y = 2.5 * x + 10",
             "input_columns": ["Feature_A"],
@@ -46,19 +46,19 @@ class TestLinearRegressionIO(unittest.TestCase):
         }
 
     def test_save_model_data_success(self):
-        # Crear archivo temporal
+        # Create temp file
         with tempfile.NamedTemporaryFile(delete=False, suffix=".joblib") as tmp:
             tmp_path = tmp.name
 
         try:
-            # Ejecutar función de guardado con el Mock
+            # Run save function with the Mock
             save_model_data(tmp_path, self.mock_model, "Test Description")
 
-            # Verificar que el archivo existe y tiene contenido
+            # Verify that the file exists and has any content
             self.assertTrue(os.path.exists(tmp_path))
             self.assertTrue(os.path.getsize(tmp_path) > 0)
 
-            # Verificar que el contenido es correcto al cargarlo de vuelta
+            # Verify that the content is correct when uploading it back
             loaded_data = joblib.load(tmp_path)
             self.assertEqual(loaded_data["formula"],
                              self.mock_model.regression_line)
@@ -66,14 +66,14 @@ class TestLinearRegressionIO(unittest.TestCase):
             self.assertEqual(loaded_data["metrics"]["train"]["R2"], 0.95)
 
         finally:
-            # Limpieza del archivo temporal
+            # Temp file cleansing
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
     def test_save_adds_extension(self):
-        # Test para ver si añade .joblib si falta
+        # Testing to see if it puts .joblib if it's missing
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            base_path = tmp.name  # Sin extensión
+            base_path = tmp.name  # No extension
             expected_path = base_path + ".joblib"
 
         try:
@@ -93,12 +93,12 @@ class TestLinearRegressionIO(unittest.TestCase):
                     pass
 
     def test_save_empty_path(self):
-        # Debe dar error si la ruta está vacía
+        # Should give an error if path is empty
         with self.assertRaises(ValueError):
             save_model_data("", self.mock_model, "Desc")
 
     def test_load_model_data_success(self):
-        # Test de carga y resumen
+        # Load and summary test
         summary, desc = load_model_data(self.sample_model_data)
 
         self.assertEqual(desc, "Test Description")
@@ -110,7 +110,7 @@ class TestLinearRegressionIO(unittest.TestCase):
         self.assertIn("R2: 0.95", full_text)
 
     def test_load_handles_missing_keys(self):
-        # Test de robustez con datos incompletos
+        # Robustness test with missing data
         incomplete_data = {"formula": "y=x"}
         summary, desc = load_model_data(incomplete_data)
 

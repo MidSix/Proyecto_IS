@@ -3,7 +3,7 @@ import pandas as pd
 import os  # Handle file paths and extensions that may vary
            # by OS (Linux, Windows, macOS)
 
-# I decided to use pandas for the general dataframe handling, because
+# We decided to use pandas for the general dataframe handling, because
 # it provides a matrix-like structure and easy data manipulation.
 class DataModule:
     # When initializing, the user can idle in the window waiting to
@@ -46,7 +46,7 @@ class DataModule:
             )
             return False
         self.error_message = None
-        # I think this is a better way to handle it, without testing if
+        # We think this is a better way to handle it, without testing if
         # the name already has a path. It has to write in the dict
         # every time but solves the problem of having two files with
         # the same name in different directories. If that happens and
@@ -86,7 +86,7 @@ class DataModule:
                 )
                 tables = cursor.fetchall()
 
-                # I think it's ok to raise error here because it's an
+                # We think it's ok to raise error here because it's an
                 # exceptional case.
                 if not tables:
                     self.error_message = (

@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error, r2_score
- # this dataset is for testing purposes only
+ # This dataset is for testing purposes only
 from matplotlib.figure import Figure
 
 
@@ -94,7 +94,7 @@ class LinearRegressionModel:
         if not self.initialized:
             return "Model not initialized"
 
-        # Separamos signo y magnitud de cada coeficiente
+        # We separate the sign and magnitude of each coefficient
         coefs = np.atleast_1d(np.ravel(self.coef_))
         signs = ['+' if c >= 0 else '-' for c in coefs]
         terms = [f"{abs(c):.3f}*{name}"
@@ -103,20 +103,20 @@ class LinearRegressionModel:
         lines = []
         n = len(terms)
 
-        # Recorremos en bloques de 2 términos
+        # We go through in blocks of 2 terms
         for idx, start in enumerate(range(0, n, 2)):
             group = range(start, min(start + 2, n))
 
             if idx == 0:
-                # Primera línea: target = ...
+                # First line: target = ...
                 line = f"{self.target_name} = "
             else:
-                # Líneas siguientes: indentadas
+                # Following lines: indented
                 line = " " * 10
 
             for j in group:
                 if idx == 0 and j == 0:
-                    # Primer término de todos: sin '+' si es positivo
+                    # First term of them all: without '+' if it's positive
                     if signs[j] == '+':
                         line += terms[j]
                     else:
@@ -126,7 +126,7 @@ class LinearRegressionModel:
 
             lines.append(line)
 
-        # Intercepto con signo al final
+        # We intercept with sign at the end
         b0 = float(np.ravel(self.intercept_)[0])
         sign0 = '+' if b0 >= 0 else '-'
         if lines:
@@ -223,7 +223,7 @@ class LinearRegressionModel:
         return self.model.predict(X)
 
     @property
-    def is_initialized(self):  # in case we need to check externally if the model is created
+    def is_initialized(self):  # Just in case we need to check externally if the model is created
         return self.initialized
 
     @property

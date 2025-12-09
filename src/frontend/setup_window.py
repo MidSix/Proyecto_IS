@@ -140,7 +140,7 @@ class SetupWindow(QWidget):
         top_panel_layout.addWidget(self.path_display)
         top_panel_layout.addWidget(self.btn_open_file)
 
-        #Bottom_layout:
+        # Bottom_layout:
         bottom_panel_layout = QHBoxLayout()
 
         # Creation of vertical views and stack the widgets on it.
@@ -151,7 +151,7 @@ class SetupWindow(QWidget):
         output_col = QVBoxLayout()
         output_col.addWidget(self.output_label)
         output_col.addWidget(self.output_selector)
-        #To add some space between label and selector
+        # To add some space between label and selector
         output_col.addStretch(1)
         output_col.addWidget(self.confirm_button)
 
@@ -179,7 +179,7 @@ class SetupWindow(QWidget):
         container_splitter_layout = QHBoxLayout()
         container_splitter_layout.addLayout(splitter_col)
 
-        #Envolpe the layout into a widget,
+        # Envolpe the layout into a widget,
         # this is for setting maximum width
         self.container_selector_widget.setLayout(container_selector_layout)
         self.container_preprocess_widget.setLayout(preprocess_col)
@@ -285,7 +285,7 @@ class SetupWindow(QWidget):
             self.container_selector_widget.setVisible(True)
             QMessageBox.information(self, "Success", "File "
                                             "loaded successfully.")
-            # Ocultar contenedores al abrir nuevo archivo
+            # Hide containers when opening a new file
             self.another_file_opened.emit()
 
         except Exception as e:
@@ -330,7 +330,7 @@ class SetupWindow(QWidget):
         #To clear the constant_name field
         self.constant_name_edit.clear()
         self.hide_containers()
-        # --- Call the set_highlight_by_missing() function with
+        # Call the set_highlight_by_missing() function with
         # the selected dict.fromkeys() dict is a class. This call the
         # method fromkeys() of class dict that basically take every
         # element from an iterable, in this case our list, and converted
@@ -359,7 +359,7 @@ class SetupWindow(QWidget):
 
     # Missing data detection and preprocessing
     def handle_missing_data_GUI(self):
-        #This function only executes when user presses the apply_button
+        # This function only executes when user presses the apply_button
         if self.current_df is None:
             QMessageBox.warning(self, "Error", "No dataset loaded.")
             return

@@ -15,7 +15,7 @@ def get_icon_path(is_win: bool) -> str:
 def set_app_icon(app: QApplication) -> None:
     is_sys_win = sys.platform.startswith("win")
     if is_sys_win:
-        myappid = "com.chad.linearregressionapp"  # ID único
+        myappid = "com.chad.linearregressionapp"  # Unique ID
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
         icon = get_icon_path(is_sys_win)
     else:
