@@ -1,6 +1,6 @@
-from src.frontend.setup_window import SetupWindow
-from src.frontend.result_window import ResultWindow
-from src.frontend.welcome_window import WelcomeWindow
+from frontend.setup_window import SetupWindow
+from frontend.result_window import ResultWindow
+from frontend.welcome_window import WelcomeWindow
 from PyQt5.QtCore import (
     pyqtSlot,
 )

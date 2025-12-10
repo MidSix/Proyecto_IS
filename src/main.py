@@ -2,13 +2,13 @@ import sys
 import qdarkstyle
 from PyQt5.QtWidgets import QApplication
 
-from src.frontend.main_window import (
+from frontend.main_window import (
     MainWindow
 )
-from src.frontend.edit_combobox import (
+from frontend.edit_combobox import (
     setup_global_combobox_behavior
 )
-from src.frontend.set_icon_app import (
+from frontend.set_icon_app import (
     set_app_icon
 )
 

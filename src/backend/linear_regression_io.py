@@ -1,5 +1,5 @@
 import joblib
-from src.backend.linear_regression_creation import LinearRegressionModel
+from backend.linear_regression_creation import LinearRegressionModel
 # We do not need a class here because we do not store meaningful
 # state; simple functions are enough.
 def load_model_data(model_data: dict) -> tuple:

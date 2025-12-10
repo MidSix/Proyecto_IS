@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
 import joblib
 import numpy as np
-from src.backend.linear_regression_io import (
+from backend.linear_regression_io import (
     load_model_data,
     save_model_data
 )
-from src.backend.linear_regression_creation import LinearRegressionModel
+from backend.linear_regression_creation import LinearRegressionModel
 
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,

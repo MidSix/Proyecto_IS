@@ -1,17 +1,17 @@
 import pandas as pd
-from src.backend.data_loader import (
+from backend.data_loader import (
     DataModule
 )
 
-from src.backend.data_split import (
+from backend.data_split import (
     DataSplitter,
     DataSplitError
 )
-from src.backend.handle_missing_data import (
+from backend.handle_missing_data import (
     handle_missing_data,
     MissingDataError
 )
-from src.frontend.table_model import PandasModel
+from frontend.table_model import PandasModel
 from PyQt5.QtCore import (
     Qt,
     pyqtSlot,
