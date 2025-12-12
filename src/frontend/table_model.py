@@ -6,15 +6,15 @@ from PyQt5.QtCore import (
 )
 from PyQt5.QtGui import QBrush, QColor
 # Lightweight Qt model exposing a pandas.DataFrame to QTableView
-#This follows the MVC design pattern: model, view, controller.
-#So this class works as the model for the view in the table.
-#That means, here, inside this class lives the data shown in the table.
-#remember that an abstract class can't be instanciated directly
-#because it doesn't have the methods with the tag
-#@abstractmethod implemented. Just defines
-#some sort of contract in which the subclass of the abstractclass must
-#implement those methods to be instanciated. Those methods are the ones
-#we are doing polymorphism here: rowCount,columnCount,data
+# This follows the MVC design pattern: model, view, controller.
+# So this class works as the model for the view in the table.
+# That means, here, inside this class lives the data shown in the table.
+# remember that an abstract class can't be instanciated directly
+# because it doesn't have the methods with the tag
+# @abstractmethod implemented. Just defines
+# some sort of contract in which the subclass of the abstractclass must
+# implement those methods to be instanciated. Those methods are the ones
+# we are doing polymorphism here: rowCount,columnCount,data
 class PandasModel(QAbstractTableModel):
     """Lightweight Qt model for displaying pandas DataFrames in tables.
 
@@ -67,7 +67,7 @@ class PandasModel(QAbstractTableModel):
         super().__init__(parent)
         self._df = df
         self.highlight_cols = set() # Here we are going to store
-        #our highlighted columns, a set to avoid duplicates.
+        # our highlighted columns, a set to avoid duplicates.
         self.highlight_color = QColor("#290908")  # just the color
 
     def rowCount(self, parent=None) -> int:
@@ -219,7 +219,7 @@ class PandasModel(QAbstractTableModel):
             and self._df[c].isna().any()
         }
 
-        # Repintar celdas y encabezados
+        # Repaint cells and headers
         if self.rowCount() and self.columnCount():
             top_left = self.index(0, 0)
             bottom_right = self.index(self.rowCount() - 1,

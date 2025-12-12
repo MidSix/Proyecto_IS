@@ -3,7 +3,7 @@ import pandas as pd
 import os  # Handle file paths and extensions that may vary
            # by OS (Linux, Windows, macOS)
 
-# I decided to use pandas for the general dataframe handling
+# We decided to use pandas for the general dataframe handling
 # because it provides a matrix-like structure and easy data
 # manipulation.
 class DataModule:
@@ -161,7 +161,7 @@ class DataModule:
                 )
                 tables = cursor.fetchall()
 
-                # I think it's ok to raise error here because it's an
+                # We think it's ok to raise error here because it's an
                 # exceptional case.
                 if not tables:
                     self.error_message = (

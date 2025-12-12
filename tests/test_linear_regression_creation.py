@@ -284,10 +284,8 @@ class TestLinearRegressionModel(unittest.TestCase):
 # If so, it triggers unittest.main(), which is responsible for:
 # 1. Scanning the entire file for classes
 # inheriting from unittest.TestCase.
-#
 # 2. Automatically discovering all methods
 # starting with the "test_" prefix.
-#
 # 3. Running those tests and reporting
 # success/failure results to the console. This block is fundamental
 # for GitHub Actions (CI/CD) to validate the code automatically,

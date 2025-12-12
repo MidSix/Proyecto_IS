@@ -110,8 +110,8 @@ class ResultWindow(QWidget):
         self.placeholder_text.setStyleSheet("color: gray; font-size: 16px;")
         self.summary_model_widget = QLabel()
         self.summary_model_widget.setAlignment(Qt.AlignLeft)
-        #Just some QSS to make the self.summary_model_widget
-        #looks better.
+        # Just some QSS to make the self.summary_model_widget
+        # looks better.
         self.summary_model_widget.setStyleSheet("""
                                     QLabel {
                                     font-family: 'Consolas';
@@ -125,7 +125,7 @@ class ResultWindow(QWidget):
         self.save_button = QPushButton("Save model")
         self.save_button.clicked.connect(self.save_model_dialog)
 
-        # --- LOAD MODEL (new) ---
+        # --- LOAD MODEL ---
         self.model_path_label = QLabel("Path")
         self.model_path_label.setStyleSheet("color: gray;")
         self.model_path_display = QLineEdit()
@@ -166,7 +166,7 @@ class ResultWindow(QWidget):
         self.container_prediction_widget.setLayout(self.prediction_layout)
         self.container_prediction_widget.hide()
 
-        #------------------------containers-----------------------------
+        #------------------------Containers-----------------------------
         self.container_scroll_area = QWidget()
         self.container_model_widget = QWidget()
         self.container_description_widget = QWidget()
@@ -224,7 +224,7 @@ class ResultWindow(QWidget):
             )
         self.container_scroll_area.setLayout(self.container_scroll_area_layout)
         # ---- Wrap container_scroll_area in
-        # scroll area for vertical scrolling ---------------------------
+        # Scroll area for vertical scrolling ---------------------------
         self.scroll_area = QScrollArea()
         self.scroll_area.setWidgetResizable(True)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
@@ -450,7 +450,9 @@ class ResultWindow(QWidget):
 
         self.train_df = data[0][0]
         self.test_df  = data[0][1]
-        self.model.set_df(self.train_df, self.test_df) #This extract
+        self.model.set_df(self.train_df, self.test_df) 
+
+        #This extracts
         #input-output columns from train,test df and store it
         #in attributes inside linear_regression module. This help us
         #to not pass this same df over and over again for each method
@@ -460,7 +462,7 @@ class ResultWindow(QWidget):
         if error is not None:
             self.cant_be_plotted.emit(error)
             return
-        self.placeholder_text.hide() #self explanatory xd
+        self.placeholder_text.hide() #Self explanatory 
         self.build_prediction_inputs()
         self.container_prediction_widget.show()
         self.container_description_widget.show()

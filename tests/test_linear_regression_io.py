@@ -52,7 +52,7 @@ class MockLinearModel:
         self.regression_line = "y = 2.5 * x + 10"
         self.feature_names = ["Feature_A"]
         self.target_name = "Target_B"
-        # Simulamos los getters como valores directos
+        # We simulate getters as direct values
         self.get_train_R2 = 0.95
         self.get_train_MSE = 0.05
         self.get_test_R2 = 0.92
@@ -105,7 +105,7 @@ class TestLinearRegressionIO(unittest.TestCase):
         None
         """
         self.mock_model = MockLinearModel()
-        # Estructura de diccionario imitando lo que se guarda en el .joblib
+        # Dictionary structure mimicking what is stored in the .joblib
         self.sample_model_data = {
             "formula": "y = 2.5 * x + 10",
             "metrics": {
@@ -129,22 +129,22 @@ class TestLinearRegressionIO(unittest.TestCase):
         -------
         None
         """
-        # Crear archivo temporal
+        # Create temporary file
         with tempfile.NamedTemporaryFile(
             delete=False,
             suffix=".joblib") as tmp:
             tmp_path = tmp.name
 
         try:
-            # Ejecutar función de guardado con el Mock
+            # Run save function with the Mock
             save_model_data(tmp_path, self.mock_model, "Test Description")
 
-            # Verificar que el archivo existe y tiene contenido
+            # Verify that the file exists and has content
             self.assertTrue(os.path.exists(tmp_path))
             self.assertTrue(os.path.getsize(tmp_path) > 0)
 
-            # Verificar que el contenido es
-            # correcto al cargarlo de vuelta
+            # Verify that the content is
+            # correct when loading it back
             loaded_data = joblib.load(tmp_path)
             self.assertEqual(loaded_data["formula"],
                              self.mock_model.regression_line)
@@ -152,7 +152,7 @@ class TestLinearRegressionIO(unittest.TestCase):
             self.assertEqual(loaded_data["metrics"]["train"]["R2"], 0.95)
 
         finally:
-            # Limpieza del archivo temporal
+            # Temporary file cleansing
             if os.path.exists(tmp_path):
                 os.remove(tmp_path)
 
@@ -170,9 +170,9 @@ class TestLinearRegressionIO(unittest.TestCase):
         -------
         None
         """
-        # Test para ver si añade .joblib si falta
+        # Test to see if it adds .joblib if missing
         with tempfile.NamedTemporaryFile(delete=False) as tmp:
-            base_path = tmp.name  # Sin extensión
+            base_path = tmp.name  # Without extension
             expected_path = base_path + ".joblib"
 
         try:
@@ -205,7 +205,7 @@ class TestLinearRegressionIO(unittest.TestCase):
         -------
         None
         """
-        # Debe dar error si la ruta está vacía
+        # Should return an error if the path is empty.
         with self.assertRaises(ValueError):
             save_model_data("", self.mock_model, "Desc")
 
@@ -223,7 +223,7 @@ class TestLinearRegressionIO(unittest.TestCase):
         -------
         None
         """
-        # Test de carga y resumen
+        # Load test and summary
         summary, desc = load_model_data(self.sample_model_data)
 
         self.assertEqual(desc, "Test Description")
@@ -248,7 +248,7 @@ class TestLinearRegressionIO(unittest.TestCase):
         -------
         None
         """
-        # Test de robustez con datos incompletos
+        # Robustness test with incomplete data
         incomplete_data = {"formula": "y=x"}
         summary, desc = load_model_data(incomplete_data)
 

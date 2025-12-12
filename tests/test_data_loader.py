@@ -213,7 +213,3 @@ class TestDataModule(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-# Dude this archive has commentaries. I swear to god I did not intend
-# to write an essay but it just happened. Sometimes I can't help
-# myself.

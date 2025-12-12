@@ -73,7 +73,7 @@ class TestHandleMissingData(unittest.TestCase):
         -------
         None
         """
-        # Your code explicitly checks
+        # Code explicitly checks
         # "if total_missing == 0". Let's verify that.
         clean_df = pd.DataFrame({"x": [1, 2], "y": [3, 4]})
         with self.assertRaises(MissingDataError):
@@ -167,8 +167,6 @@ class TestHandleMissingData(unittest.TestCase):
         None
         """
         # Filling with a specific value, e.g., "0"
-        # Note: Your code expects 'constant' as
-        # a string input from GUI, then floats it.
         constant_val = "99"
         df_res, _, msg = handle_missing_data(
             self.df.copy(), self.cols, "Fill with constant",
@@ -214,7 +212,7 @@ class TestHandleMissingData(unittest.TestCase):
         -------
         None
         """
-        # Just to cover the 'else' branch in your strategy function
+        # Just to cover the 'else' branch in our strategy function
         with self.assertRaises(MissingDataError):
             handle_missing_data(
                 self.df.copy(),

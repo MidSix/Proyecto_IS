@@ -71,8 +71,8 @@ class SetupWindow(QWidget):
     reset_to_initial_state()
         Clear all selections and reset UI to initial state.
     """
-    #Signals to communicate with ResultWindow
-    #Signals that are sent
+    # Signals to communicate with ResultWindow
+    # Signals that are sent
     train_test_df_ready = pyqtSignal(object)
     another_file_opened = pyqtSignal()
     def __init__(self, stacked_widget) -> None:
@@ -201,7 +201,7 @@ class SetupWindow(QWidget):
         top_panel_layout.addWidget(self.path_display)
         top_panel_layout.addWidget(self.btn_open_file)
 
-        #Bottom_layout:
+        # Bottom_layout:
         bottom_panel_layout = QHBoxLayout()
 
         # Creation of vertical views and stack the widgets on it.
@@ -240,7 +240,7 @@ class SetupWindow(QWidget):
         container_splitter_layout = QHBoxLayout()
         container_splitter_layout.addLayout(splitter_col)
 
-        #Envolpe the layout into a widget,
+        # Envolpe the layout into a widget,
         # this is for setting maximum width
         self.container_selector_widget.setLayout(container_selector_layout)
         self.container_preprocess_widget.setLayout(preprocess_col)
@@ -269,7 +269,7 @@ class SetupWindow(QWidget):
         #don't care(second argument) In order to bottom_panel_widget
         #has the minimum width all its children must be next to each
         #other which is what we want, so with a single line
-        #we solve the problem xd.
+        #we solve the problem.
         self.bottom_panel_widget.setSizePolicy(QSizePolicy.Maximum,
                                                QSizePolicy.Preferred)
         #Important! here we are setting the min and max height
@@ -388,7 +388,7 @@ class SetupWindow(QWidget):
             self.container_selector_widget.setVisible(True)
             QMessageBox.information(self, "Success", "File "
                                             "loaded successfully.")
-            # Ocultar contenedores al abrir nuevo archivo
+            # Hide containers when opening a new file 
             self.another_file_opened.emit()
 
         except Exception as e:
@@ -472,7 +472,7 @@ class SetupWindow(QWidget):
             f"Inputs: {', '.join(self.selected_inputs)}\n"
             f"Output: {self.selected_output}"
         )
-        #To clear the constant_name field
+        # To clear the constant_name field
         self.constant_name_edit.clear()
         self.hide_containers()
         # --- Call the set_highlight_by_missing() function with
@@ -518,7 +518,7 @@ class SetupWindow(QWidget):
         -------
         None
         """
-        #This function only executes when user presses the apply_button
+        # This function only executes when user presses the apply_button
         if self.current_df is None:
             QMessageBox.warning(self, "Error", "No dataset loaded.")
             return
@@ -596,17 +596,17 @@ class SetupWindow(QWidget):
         -------
         None
         """
-        #We assume it's True, if not ResultWindow emit a signal
-        #to change this attribute self.was_succesfully_plotted.
-        #This is for showing or not the message saying the plot was
-        #succesfull.
+        # We assume it's True, if not ResultWindow emit a signal
+        # to change this attribute self.was_succesfully_plotted.
+        # This is for showing or not the message saying the plot was
+        # succesfull.
         self.was_succesfully_plotted = True
         model = self.table.model()
         cols = [self.selected_output] + self.selected_inputs #This order
-        #is used to select x_train/test and y_train/test.
-        #self.selected_output can only be one, so if we index 0 we
-        #are getting y_train/test and the rammaining
-        #is x_train/test.
+        # is used to select x_train/test and y_train/test.
+        #  self.selected_output can only be one, so if we index 0 we
+        # are getting y_train/test and the rammaining
+        # is x_train/test.
         if self.current_df is None or self.current_df.empty:
             QMessageBox.warning(self, "Error", "There isn't any "
                                 "data avaliable to split.")
@@ -712,7 +712,7 @@ class SetupWindow(QWidget):
         return None
 
     #-------------------------Connections:------------------------------
-    #Signals that are received
+    # Signals that are received
     @pyqtSlot(object)
     def cant_be_plotted(self, res: object) -> None:
         """Receive signal that model cannot be plotted.

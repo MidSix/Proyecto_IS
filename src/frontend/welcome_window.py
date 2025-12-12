@@ -57,7 +57,7 @@ class WelcomeWindow(QWidget):
                                 color: #E0E0E0;
                                 }
                                 """)
-        #this is just some HTML to format the welcome message
+        # This is just some HTML to format the welcome message
         self.welcome_message.setText(
             "<h1><b>Welcome to the Linear Regression App</b></h1><br>"
 
