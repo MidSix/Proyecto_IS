@@ -28,19 +28,29 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
   ``` pip install -r dependencies.txt ```  
     You'll find **dependencies.txt** inside the root folder of the project  
   - (Note): You may encounter problems installing these dependencies, if this is the case please consider
-    updating your pip using: ```python -m install --upgrade pip``` and running the previous command again.
+    updating your pip using:  
+    ```python -m install --upgrade pip``` and running the previous command again.
     If this doesn't work please consider installing a C/C++ compiler in your PC, then run again the pip command.
     But at today's date is already tested that isn't necessary to do so.
 
   ### 2. Download and run the program
-- Download the .zip file from the release section, once downloaded extract it and run main
-- Alternatively: Clone the repo from your desire folder in your PC and run main
+- Download the .zip file from the release section, once downloaded extract it and run main which is inside src directory  
+  **How to run the main.py module?** First head over to where you extracted the app and (In windows 11) right click and  
+   click on **Open in terminal**. If you're not on this SO just google it how to open a terminal in a given path
+   or just navigate from the root to where you have the app, the principle we applied with windows 11 is the same in every SO  
+   **Open the shell in the path in which you have the app**
+ <img width="935" height="760" alt="how_to_run_it_1" src="https://github.com/user-attachments/assets/bd7e2799-e532-48bd-a124-c67f43ca975e" />
+
+ After that just type ``` python src/main.py ``` and hit enter. If you see an error make sure that you are in the right  
+ environment, the one in which you installed all the dependencies.
+ 
+- Alternatively: Clone the repo from your desire folder in your PC and run main.
 
 # User guide
 ### **1. Load data**
 - Use the button **"Open File"** in Data Management to open a file  
   <img width="570" height="113" alt="1" src="https://github.com/user-attachments/assets/8eb39cab-6946-4742-8861-9150529efa15" />
-
+  
 - Select between **CSV**, **Excel**, and **MySQL** data formats to load
   <img width="766" height="318" alt="2" src="https://github.com/user-attachments/assets/4c0f1d88-6fd6-486d-bdcb-672464debeed" />
 
