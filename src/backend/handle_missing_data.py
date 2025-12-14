@@ -115,8 +115,12 @@ def strategy_handle_missing_data(
 
     elif strategy == "Fill with mean":
         for col in cols:
-            mean = round(df[col].mean(), 4)
+            # Only if all elements in the column are numeric it does the
+            # mean. The problem before was that it was trying to do
+            # the mean without cheking out first if the column is
+            # numeric.
             if pd.api.types.is_numeric_dtype(df[col]):
+                mean = round(df[col].mean(), 4)
                 df[col] = df[col].fillna(mean)
         msg_preprocess_complete = "Missing values filled with column mean."
 
@@ -129,7 +133,7 @@ def strategy_handle_missing_data(
     elif strategy == "Fill with constant":
         if len(constant.strip()) == 0:
             raise MissingDataError("Please provide a constant value")
-        constant = float(constant)
+        constant = float(constant) #If not float it raises an error
         for col in cols:
             df[col] = df[col].fillna(constant)
         msg_preprocess_complete = (f"Missing values filled "
