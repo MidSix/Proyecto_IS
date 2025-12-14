@@ -26,7 +26,11 @@ This software was made using the **Scrum methodology**, along with **Git**, **Gi
   - pip
   - Dependencies (install using pip):  
   ``` pip install -r dependencies.txt ```  
-    You'll find **dependencies.txt** inside the root folder of the project
+    You'll find **dependencies.txt** inside the root folder of the project  
+  - (Note): You may encounter problems installing these dependencies, if this is the case please consider
+    updating your pip using: ```python -m install --upgrade pip``` and running the previous command again.
+    If this doesn't work please consider installing a C/C++ compiler in your PC, then run again the pip command.
+    But at today's date is already tested that isn't necessary to do so.
 
   ### 2. Download and run the program
 - Download the .zip file from the release section, once downloaded extract it and run main
